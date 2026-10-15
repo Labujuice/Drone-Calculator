@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>多旋翼全尺寸動力響應、航時與平板阻力航速模擬器</title>
+<title>多旋翼配置與續航試算機</title>
 <style>
   :root {
     --bg: #f8fafc;
@@ -41,7 +41,7 @@
     border: 1px solid #bae6fd;
   }
 
-  /* 快速情境載入條 */
+  /* 常用範本快速載入條 */
   .presets-bar {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
@@ -225,15 +225,15 @@
 <div class="container">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <a href="index.html" style="text-decoration:none; color:var(--muted); font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:4px; padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:#ffffff; transition:all 0.15s ease;">← 首頁 Hub</a>
-      <h2>多旋翼全尺寸動力響應、航時與平板阻力航速模擬器</h2>
+      <a href="index.html" style="text-decoration:none; color:var(--muted); font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:4px; padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:#ffffff; transition:all 0.15s ease;">← 回工具列表</a>
+      <h2>多旋翼配置與續航試算機</h2>
     </div>
     <span class="badge" id="top-badge">四軸 (X4) ｜ 12"×45mm ｜ 6S2P</span>
   </div>
 
-  <!-- 快速預設情境 -->
+  <!-- 常用範本 -->
   <div class="presets-bar">
-    <div class="preset-title">⚡ 快速機型情境切換 (一鍵配置全機參數)：</div>
+    <div class="preset-title">⚡ 常用機型規格（一鍵帶入）：</div>
     <div class="scenario-btns">
       <button class="scenario-btn" onclick="applyPreset('light')">🕊️ 450 輕量長航 (4軸 / 12" / 6S / ~1.9kg)</button>
       <button class="scenario-btn" onclick="applyPreset('medium')">🚁 750 中型行業機 (6軸 / 18" / 12S / ~7.2kg)</button>
@@ -246,7 +246,7 @@
     <div class="metric-card">
       <div class="metric-label">起飛總重 (AUW)</div>
       <div class="metric-value" id="val-auw">1,912 g</div>
-      <div class="metric-sub" id="sub-auw">≤2kg 微型級距 (餘裕 88g)</div>
+      <div class="metric-sub" id="sub-auw">≤2kg 微型長航 (餘裕 88g)</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">預估實戰飛行時間</div>
@@ -266,7 +266,7 @@
     <div class="metric-card">
       <div class="metric-label">整機功耗 / 懸停力效</div>
       <div class="metric-value" id="val-power">236 W</div>
-      <div class="metric-sub" id="sub-eff">力效: 9.68 g/W (已解封)</div>
+      <div class="metric-sub" id="sub-eff">力效: 9.68 g/W</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">懸停轉速 / 懸停油門</div>
@@ -275,9 +275,9 @@
     </div>
   </div>
 
-  <!-- 第 0 區塊：旋翼架構與軸數配置 -->
+  <!-- 第 1 區塊：旋翼架構與軸數配置 -->
   <div class="section-title">
-    <span>🚁 0. 旋翼動力佈局與架構 (解除四軸硬編碼 ｜ 支援 4軸 / 6軸 / 8軸 / 同軸X8)</span>
+    <span>🚁 1. 機型與軸數選擇 (4軸 / 6軸 / 8軸 / 同軸X8)</span>
     <span id="prop-notice" style="font-size:0.75rem; color:var(--muted);">💡 12" 適配對角軸距 450mm</span>
   </div>
   <div class="controls-grid">
@@ -290,14 +290,14 @@
         <button class="preset-btn active" id="btn-arch-4" onclick="setArchitecture('quad')">四軸 Quad (4 軸)</button>
         <button class="preset-btn" id="btn-arch-6" onclick="setArchitecture('hexa')">六軸 Hexa (6 軸)</button>
         <button class="preset-btn" id="btn-arch-8" onclick="setArchitecture('octo')">八軸 Octo (8 軸)</button>
-        <button class="preset-btn" id="btn-arch-x8" onclick="setArchitecture('x8')">同軸八槳 X8 (4臂8旋翼, -6%下洗力效)</button>
+        <button class="preset-btn" id="btn-arch-x8" onclick="setArchitecture('x8')">同軸八槳 X8 (4臂8旋翼)</button>
       </div>
     </div>
   </div>
 
-  <!-- 第 1 區塊：螺旋槳配置 -->
+  <!-- 第 2 區塊：螺旋槳配置 -->
   <div class="section-title">
-    <span>🌀 1. 螺旋槳配置 (直徑 8" ～ 36" 全覆蓋 ｜ 螺距 Pitch 20mm ～ 350mm 解除懲罰)</span>
+    <span>🌀 2. 螺旋槳規格 (直徑 8" ～ 36" ｜ 螺距 20mm ～ 350mm)</span>
   </div>
   <div class="controls-grid">
     <!-- 直徑 -->
@@ -339,19 +339,19 @@
         <span class="control-val" id="lbl-blades">2 葉片 (雙葉折疊)</span>
       </div>
       <div style="padding: 4px 0; font-size:0.72rem; color:var(--muted);">
-        三葉槳在相同直徑下提供較高推力與平穩度，但尾流干擾使懸停力效折減約 10%。
+        三葉槳在相同直徑下提供較高推力，但懸停力效略降約 10%。
       </div>
       <div class="preset-btns">
-        <button class="preset-btn active" id="btn-blade-2" onclick="setBlades(2)">二葉折疊槳 (高力效推薦)</button>
-        <button class="preset-btn" id="btn-blade-3" onclick="setBlades(3)">三葉槳 (-10% 力效)</button>
+        <button class="preset-btn active" id="btn-blade-2" onclick="setBlades(2)">二葉折疊槳 (推薦)</button>
+        <button class="preset-btn" id="btn-blade-3" onclick="setBlades(3)">三葉槳</button>
       </div>
     </div>
   </div>
 
-  <!-- 第 2 區塊：電池系統配置 -->
+  <!-- 第 3 區塊：電池系統配置 -->
   <div class="section-title">
-    <span>🔋 2. 電池系統 (4S~24S 高壓電系 ｜ 1P~8P 支援自建鋰電或大容量鋰聚)</span>
-    <button class="preset-btn" style="flex:none; padding:4px 10px;" onclick="syncP50B()">🔄 依 S/P 自動同步 21700-P50B 成組參數</button>
+    <span>🔋 3. 電池配置 (4S~24S ｜ 1P~8P 支援自組鋰電或大容量鋰聚)</span>
+    <button class="preset-btn" style="flex:none; padding:4px 10px;" onclick="syncP50B()">🔄 依 S/P 自動帶入 21700-P50B 規格</button>
   </div>
   <div class="controls-grid">
     <!-- 串聯 S -->
@@ -424,15 +424,15 @@
     </div>
   </div>
 
-  <!-- 第 3 區塊：機身結構、雲台負載、馬達與航電功耗 -->
+  <!-- 第 4 區塊：機身結構、雲台負載、馬達與航電功耗 -->
   <div class="section-title">
-    <span>🛩️ 3. 機身結構、載荷、馬達定子與航電功耗 (全尺寸機架 300g~6,000g ｜ 馬達 40g~800g ｜ 載重 0~5kg)</span>
+    <span>🛩️ 4. 機架、載重、馬達與設備耗電</span>
   </div>
   <div class="controls-grid">
     <!-- 機架 -->
     <div class="control-group">
       <div class="control-header">
-        <span>機架空重 (含臂/起落架)</span>
+        <span>機架空重 (含機臂/起落架)</span>
         <span class="control-val" id="lbl-frame">460 g</span>
       </div>
       <input type="range" id="slider-frame" min="300" max="6000" step="20" value="460">
@@ -446,36 +446,36 @@
     <!-- 雲台/有效載荷 -->
     <div class="control-group">
       <div class="control-header">
-        <span>雲台與有效任務載荷</span>
+        <span>雲台與任務載重</span>
         <span class="control-val" id="lbl-gimbal">150 g</span>
       </div>
       <input type="range" id="slider-gimbal" min="0" max="5000" step="20" value="150">
       <div class="preset-btns">
         <button class="preset-btn" id="btn-gimbal-0" onclick="setVal('slider-gimbal', 0)">空載 (0g)</button>
         <button class="preset-btn" id="btn-gimbal-150" onclick="setVal('slider-gimbal', 150)">小型航拍 (150g)</button>
-        <button class="preset-btn" id="btn-gimbal-650" onclick="setVal('slider-gimbal', 650)">光學雙光 (650g)</button>
-        <button class="preset-btn" id="btn-gimbal-2500" onclick="setVal('slider-gimbal', 2500)">LiDAR/單眼 (2.5kg)</button>
+        <button class="preset-btn" id="btn-gimbal-650" onclick="setVal('slider-gimbal', 650)">雙光吊艙 (650g)</button>
+        <button class="preset-btn" id="btn-gimbal-2500" onclick="setVal('slider-gimbal', 2500)">單眼/光達 (2.5kg)</button>
       </div>
     </div>
 
     <!-- PCBA 與線材 -->
     <div class="control-group">
       <div class="control-header">
-        <span>PCBA、分電盤與線材重</span>
+        <span>線材與分電板重</span>
         <span class="control-val" id="lbl-pcba-w">130 g</span>
       </div>
       <input type="range" id="slider-pcba-w" min="50" max="1000" step="10" value="130">
       <div class="preset-btns">
         <button class="preset-btn" id="btn-pcba-95" onclick="setVal('slider-pcba-w', 95)">極簡 (95g)</button>
         <button class="preset-btn" id="btn-pcba-130" onclick="setVal('slider-pcba-w', 130)">標準 (130g)</button>
-        <button class="preset-btn" id="btn-pcba-350" onclick="setVal('slider-pcba-w', 350)">大電流雙備援 (350g)</button>
+        <button class="preset-btn" id="btn-pcba-350" onclick="setVal('slider-pcba-w', 350)">大電流板 (350g)</button>
       </div>
     </div>
 
     <!-- 單顆馬達重量 -->
     <div class="control-group">
       <div class="control-header">
-        <span>單顆馬達重 & 定子等級</span>
+        <span>單顆馬達重 & 定子尺寸</span>
         <span class="control-val" id="lbl-motor-w">56g (3106 級盤式)</span>
       </div>
       <input type="range" id="slider-motor-w" min="40" max="800" step="5" value="56">
@@ -495,24 +495,24 @@
       </div>
       <input type="range" id="slider-kv" min="60" max="1200" step="5" value="480">
       <div class="preset-btns">
-        <button class="preset-btn" id="btn-kv-100" onclick="setVal('slider-kv', 100)">100KV (巨槳/重載)</button>
-        <button class="preset-btn" id="btn-kv-240" onclick="setVal('slider-kv', 240)">240KV (12S標準)</button>
-        <button class="preset-btn" id="btn-kv-480" onclick="setVal('slider-kv', 480)">480KV (6S標準)</button>
-        <button class="preset-btn" id="btn-kv-750" onclick="setVal('slider-kv', 750)">750KV (小槳高速)</button>
+        <button class="preset-btn" id="btn-kv-100" onclick="setVal('slider-kv', 100)">100KV (大槳)</button>
+        <button class="preset-btn" id="btn-kv-240" onclick="setVal('slider-kv', 240)">240KV (12S)</button>
+        <button class="preset-btn" id="btn-kv-480" onclick="setVal('slider-kv', 480)">480KV (6S)</button>
+        <button class="preset-btn" id="btn-kv-750" onclick="setVal('slider-kv', 750)">750KV (小槳)</button>
       </div>
     </div>
 
     <!-- 航電與設備基底功耗 -->
     <div class="control-group">
       <div class="control-header">
-        <span>機載航電/電腦/載荷基底功耗</span>
+        <span>飛控與機載設備耗電</span>
         <span class="control-val" id="lbl-avionics">15 W</span>
       </div>
       <input type="range" id="slider-avionics" min="8" max="180" step="2" value="15">
       <div class="preset-btns">
-        <button class="preset-btn" id="btn-av-15" onclick="setVal('slider-avionics', 15)">15W (標準飛控圖傳)</button>
-        <button class="preset-btn" id="btn-av-45" onclick="setVal('slider-avionics', 45)">45W (+雙光吊艙)</button>
-        <button class="preset-btn" id="btn-av-90" onclick="setVal('slider-avionics', 90)">90W (+Jetson/LiDAR)</button>
+        <button class="preset-btn" id="btn-av-15" onclick="setVal('slider-avionics', 15)">15W (標準)</button>
+        <button class="preset-btn" id="btn-av-45" onclick="setVal('slider-avionics', 45)">45W (+吊艙)</button>
+        <button class="preset-btn" id="btn-av-90" onclick="setVal('slider-avionics', 90)">90W (+機載電腦)</button>
       </div>
     </div>
   </div>
@@ -520,7 +520,7 @@
   <!-- 重量佔比視覺化條 -->
   <div class="weight-bar-card">
     <div class="weight-bar-header">
-      <span id="wb-left-note">整機配重實時拆解</span>
+      <span id="wb-left-note">各部分重量拆解</span>
       <span id="wb-summary">總重 1,912 g｜電池能量密度: 240 Wh/kg</span>
     </div>
     <div class="weight-bar-track">
@@ -542,16 +542,16 @@
   <!-- 曲線圖表 -->
   <div class="chart-card">
     <div class="chart-title">
-      <span id="chart-main-title">起飛總重 (AUW) vs. 實戰飛行時間動態曲線（多尺寸螺旋槳動態對比）</span>
+      <span id="chart-main-title">起飛總重 (AUW) vs. 預估飛行時間曲線</span>
       <div class="legend" id="chart-legend"></div>
     </div>
     <canvas id="simChart"></canvas>
   </div>
 
-  <!-- Pitch 角度與最大飛行速度計算機 -->
+  <!-- Pitch 角度與平飛速度計算 -->
   <div class="speed-calc-card">
     <div class="speed-calc-header">
-      <h3>🚀 4. 前傾 Pitch 角度與最大飛行速度計算機 (以單個螺旋槳盤面為機身阻力基準)</h3>
+      <h3>🚀 5. 前傾角度與平飛航速試算</h3>
       <span id="speed-status-badge" style="font-size:0.8rem; color:var(--success); font-weight:700;">✅ 可穩定維持等高平飛</span>
     </div>
 
@@ -559,36 +559,36 @@
       <!-- Pitch 角度滑桿 -->
       <div class="control-group speed-group">
         <div class="control-header">
-          <span>前傾俯仰角度 (Pitch θ)</span>
+          <span>前傾俯仰角 (Pitch θ)</span>
           <span class="control-val" id="lbl-pitch-deg" style="color:var(--success);">30 °</span>
         </div>
         <input type="range" id="slider-pitch-deg" min="5" max="65" step="1" value="30">
         <div class="preset-btns">
-          <button class="preset-btn" id="btn-pitch-15" onclick="setVal('slider-pitch-deg', 15)">15° (慢速巡航)</button>
-          <button class="preset-btn active" id="btn-pitch-30" onclick="setVal('slider-pitch-deg', 30)">30° (標準航拍)</button>
-          <button class="preset-btn" id="btn-pitch-45" onclick="setVal('slider-pitch-deg', 45)">45° (高速平飛)</button>
-          <button class="preset-btn" id="btn-pitch-max" onclick="setPitchToLimit()">極限平飛角</button>
+          <button class="preset-btn" id="btn-pitch-15" onclick="setVal('slider-pitch-deg', 15)">15° (慢速)</button>
+          <button class="preset-btn active" id="btn-pitch-30" onclick="setVal('slider-pitch-deg', 30)">30° (巡航)</button>
+          <button class="preset-btn" id="btn-pitch-45" onclick="setVal('slider-pitch-deg', 45)">45° (平飛)</button>
+          <button class="preset-btn" id="btn-pitch-max" onclick="setPitchToLimit()">極限角度</button>
         </div>
       </div>
 
       <!-- 氣動阻力修正係數滑桿 -->
       <div class="control-group speed-group">
         <div class="control-header">
-          <span>機身氣動阻力係數 (η_aero)</span>
+          <span>阻力係數 (η_aero)</span>
           <span class="control-val" id="lbl-aero-eff" style="color:var(--success);">0.80</span>
         </div>
         <input type="range" id="slider-aero-eff" min="0.30" max="1.50" step="0.05" value="0.80">
         <div class="preset-btns">
-          <button class="preset-btn" id="btn-eff-050" onclick="setVal('slider-aero-eff', 0.50)">0.50 (極致流線型)</button>
-          <button class="preset-btn active" id="btn-eff-080" onclick="setVal('slider-aero-eff', 0.80)">0.80 (標準機身)</button>
-          <button class="preset-btn" id="btn-eff-110" onclick="setVal('slider-aero-eff', 1.10)">1.10 (外掛大型載荷)</button>
+          <button class="preset-btn" id="btn-eff-050" onclick="setVal('slider-aero-eff', 0.50)">0.50 (流線機身)</button>
+          <button class="preset-btn active" id="btn-eff-080" onclick="setVal('slider-aero-eff', 0.80)">0.80 (標準)</button>
+          <button class="preset-btn" id="btn-eff-110" onclick="setVal('slider-aero-eff', 1.10)">1.10 (外掛多)</button>
         </div>
       </div>
 
       <!-- 阻力模型參考說明 -->
       <div class="control-group speed-group" style="justify-content:center;">
         <div style="font-size:0.76rem; color:var(--muted); line-height:1.5;">
-          <strong>🎯 阻力模型更新：</strong>以<strong>單個螺旋槳盤面面積</strong> $A_{\text{ref}} = \pi R^2 = \frac{1}{4} \pi D^2$ 作為整機等效迎風面積基準，平板阻力 $C_D = 1.28$。平飛時前向平衡：$F_x = m g \tan\theta = \frac{1}{2} \rho V^2 A_{\text{ref}} C_D \eta$。徹底解決大直徑螺旋槳導致極速被過度懲罰的失真現象！
+          <strong>💡 試算備註：</strong>以<strong>單個螺旋槳面積</strong>作為機身迎風阻力參考面。平飛時前向平衡 $F_x = m g \tan\theta = \frac{1}{2} \rho V^2 A_{\text{ref}} C_D \eta$，可評估當前推力下能飛到的大致航速。
         </div>
       </div>
     </div>
@@ -596,19 +596,19 @@
     <!-- 速度與推力輸出指標 -->
     <div class="speed-results-grid">
       <div class="metric-card" style="border-color:#bbf7d0; background:#f0fdf4;">
-        <div class="metric-label">最大飛行速度 (V_max)</div>
+        <div class="metric-label">預估平飛速度 (V_max)</div>
         <div class="metric-value" id="val-speed-kmh" style="color:var(--success);">55.4 km/h</div>
         <div class="metric-sub" id="sub-speed-ms">15.4 m/s (約 29.9 節)</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">前向水平推力分量 (F_x)</div>
+        <div class="metric-label">水平前向推力 (F_x)</div>
         <div class="metric-value" id="val-thrust-fx">1,104 g</div>
         <div class="metric-sub" id="sub-thrust-fx">10.8 N (AUW × tan θ)</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">等高所需總推力 (T_req)</div>
         <div class="metric-value" id="val-thrust-req">2,208 g</div>
-        <div class="metric-sub" id="sub-thrust-req">佔最大推力 43% (餘裕充裕)</div>
+        <div class="metric-sub" id="sub-thrust-req">佔最大推力 43% (餘裕充足)</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">極限平飛傾角與極速</div>
@@ -618,11 +618,11 @@
     </div>
   </div>
 
-  <!-- 底部理論區塊 -->
+  <!-- 底部計算說明 -->
   <div class="theory-card">
     <div class="theory-header">
-      <h3>📐 系統核心物理模型、算式推導與理論依據 (Theoretical Formulations)</h3>
-      <span style="font-size:0.75rem; color:var(--muted);">嚴謹空氣動力學、電動旋翼與機電能量模型 (全尺寸升級版)</span>
+      <h3>📐 計算公式與參考說明</h3>
+      <span style="font-size:0.75rem; color:var(--muted);">簡易動量理論、推重比與平飛阻力計算原理</span>
     </div>
 
     <div class="theory-grid">
@@ -635,10 +635,10 @@
           η_base = k₀ / √DL   (k₀ ≈ 7.78, 單位 g/W)
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>將 $N_{\text{rotors}}$ 個旋翼投影面積求和得到總掃掠面積 $A_{\text{rotors}}$。大螺旋槳或多旋翼佈局使槳盤負載 $DL$ 顯著降低，能量轉換動能的動量損失縮小，力效突破傳統 13.5 g/W 限制，最高可達 18~22 g/W。
+          <strong>說明：</strong>將 $N_{\text{rotors}}$ 個旋翼投影面積求和得到總掃掠面積 $A_{\text{rotors}}$。大螺旋槳或多旋翼佈局使槳盤負載 $DL$ 顯著降低，能量轉換動能的動量損失縮小，力效突破傳統 13.5 g/W 限制，最高可達 18~22 g/W。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>源自<strong>蘭金－弗勞德致動盤動量理論 (Rankine-Froude Momentum Theory)</strong>。理想推力 $T = 2\rho A v_i^2$，誘導功率 $P_i = T v_i = T^{3/2}/\sqrt{2\rho A}$。已解除先前的硬性 13.5 g/W 封頂，採用動量極限與電機銅鐵耗物理漸進飽和模型。
+          <strong>參考說明：</strong>以致動盤動量基礎公式 $T = 2\rho A v_i^2$ 進行推導，誘導功率 $P_i = T v_i = T^{3/2}/\sqrt{2\rho A}$。已解除先前的硬性 13.5 g/W 限制，改用動量極限與電機耗損漸進飽和模型。
         </div>
       </div>
 
@@ -656,7 +656,7 @@
           • <strong>f_coaxial (同軸下洗)：</strong>X8 同軸結構下層槳在下洗流中運行，整機力效折減約 6% (f=0.94)。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>結合<strong>葉素理論 (Blade Element Theory)</strong> 中的葉片誘導阻力干擾，與無刷馬達定子電磁幾何（力矩常數 $K_t \propto D_{\text{stator}}^2 \cdot H$），精準反映大尺寸低轉速盤式馬達的超高力效。
+          <strong>參考說明：</strong>考量葉片誘導阻力干擾與盤式馬達幾何特性，反映大尺寸低轉速盤式馬達的力效表現。
         </div>
       </div>
 
@@ -669,24 +669,24 @@
           Throttle_hover = (RPM_hover / RPM_no_load) × 100%
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>計算多旋翼在產生單軸推力 $T_{\text{axis}} = AUW / N_{\text{rotors}}$ 時必須維持的旋轉速度，並與當前高壓電系及 KV 值的空載轉速對比，求出電調 PWM 佔空比。
+          <strong>說明：</strong>計算多旋翼在產生單軸推力 $T_{\text{axis}} = AUW / N_{\text{rotors}}$ 時必須維持的旋轉速度，並與當前電壓及 KV 值的空載轉速對比，求出油門佔空比。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>旋翼推力公式 $T = C_T \rho n^2 D^4$。轉速隨直徑以 $D^{-1.45}$ 下降，大直徑螺旋槳以千轉出頭即可產生數公斤推力，顯著降低定子切換頻率與鐵損。
+          <strong>參考說明：</strong>依旋翼推力公式 $T = C_T \rho n^2 D^4$ 估算。轉速隨直徑以 $D^{-1.45}$ 下降，大直徑螺旋槳以千轉即可產生數公斤推力，降低定子切換頻率與耗損。
         </div>
       </div>
 
       <!-- 算式 4：螺旋槳結構質量二次方縮放律 -->
       <div class="formula-block">
-        <div class="formula-title">4. 螺旋槳重量多軸非線性幾何縮放模型</div>
+        <div class="formula-title">4. 螺旋槳重量多軸幾何縮放模型</div>
         <div class="formula-box">
           W_props = N_rotors × 12g × (D / 12)^2.15 × [1 + (P_mm - 45) × 0.002] × f_b_w
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>碳纖維槳隨尺寸增加，葉根需抵抗離心力與氣動彎矩，質量呈幾何級數指數上升（大於長度一次方，約為 2.15 次方）。
+          <strong>說明：</strong>碳纖維槳隨尺寸增加，葉根需抵抗離心力與氣動彎矩，質量呈指數上升（約為 2.15 次方）。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>結構力學懸臂樑彎曲相似律 (Geometric Scaling Laws)。多旋翼薄碳纖槳葉經大直徑槳實測標定，12"雙葉折疊槳約 12g/支，28"槳約 97g/支，高度吻合主流商業碳纖折疊槳實測值。
+          <strong>參考說明：</strong>經多款碳纖折疊槳實測標定，12" 雙葉折疊槳約 12g/支，28" 槳約 97g/支，貼近常見商業碳纖折疊槳重量。
         </div>
       </div>
 
@@ -699,16 +699,16 @@
           W_bat_auto = S × P × 70.5g + (S × P × 2.8g + 20g)
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>支援 4S 至 24S 高壓電系。高壓系統在大功率輸出時大幅減少傳輸線路與 MOSFET 電流 $I = P / V$，成倍降低導通阻抗熱損 ($P_{\text{loss}} = I^2 R$)。
+          <strong>說明：</strong>支援 4S 至 24S 電壓。高壓電系在大功率輸出時能減少電流，降低線路與電調導通損耗。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>焦耳定律與電化學儲能模型。提供 21700 P50B 規格自動成組連動，亦可切換為手動自訂大容量鋰聚合物 (LiPo/Solid-state) 電池包。
+          <strong>參考說明：</strong>提供 21700 P50B 規格自動成組，亦可切換為手動自訂大容量電池包。
         </div>
       </div>
 
       <!-- 算式 6：整機功率平衡與真實飛行時間推導 -->
       <div class="formula-block">
-        <div class="formula-title">6. 功率平衡方程式與自適應航電功耗</div>
+        <div class="formula-title">6. 功率平衡與航電功耗試算</div>
         <div class="formula-box">
           P_hover_motor = AUW / η_hover             [W]<br>
           P_hover_total = P_hover_motor + P_avionics [W]<br>
@@ -716,16 +716,16 @@
           FlightTime_real = (E_usable / P_real) × 60 [分鐘]
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>解開原先固定 15W 的限制，支援使用者設定 8W~180W 的機載電腦 (Jetson Orin)、光達 (LiDAR) 與高功率雙光雲台負載功耗，精確模擬真實任務耗電。
+          <strong>說明：</strong>支援使用者設定 8W~180W 的機載電腦、光達 (LiDAR) 或雲台負載功耗，更貼合實際任務耗電。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>熱力學第一定律與能量守恆。實戰飛行需克服前向阻力與姿態微調，保留 10% 裕度作為巡航抗風動力開銷。
+          <strong>參考說明：</strong>依能量守恆估算，並保留 10% 裕度作為日常飛行微調與巡航抗風動力開銷。
         </div>
       </div>
 
       <!-- 算式 7：物理飽和修正推力與推重比 (TWR) -->
       <div class="formula-block">
-        <div class="formula-title">7. 物理飽和修正最大推力與推重比模型</div>
+        <div class="formula-title">7. 物理飽和修正最大推力與推重比</div>
         <div class="formula-box">
           T_axis_aero = T_hover × (RPM_full / RPM_hover)²<br>
           T_motor_limit = W_motor × [24.0 × (60 / W_motor)^0.12]<br>
@@ -733,16 +733,16 @@
           TWR = (N_rotors × T_axis_max × 0.95) / AUW
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong><strong>徹底告別油門倒數虛假放大！</strong>由「氣動全油門推力」與「馬達定子物理磁熱極限」共同取最小值。馬達過小或定子過輕時，推力會如實受到物理飽和限制，確保推重比具有精確工程參考價值。
+          <strong>說明：</strong>由「氣動全油門推力」與「馬達定子物理極限」共同取最小值。馬達過小或定子過輕時，推力會受到物理飽和限制，避免推重比被過度高估。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong>無刷外轉子馬達功率密度極限（6~10 W/g）與反電勢電氣飽和限制。小型馬達推重比約 22~25 倍自重，大型工業馬達約 16~19 倍自重，由定子重量嚴格界定物理上限。
+          <strong>參考說明：</strong>依無刷馬達功率密度與定子尺寸限制進行評估，大型馬達推重比隨定子自重產生物理飽和。
         </div>
       </div>
 
       <!-- 算式 8：單盤面阻力基準之最大航速方程式 -->
       <div class="formula-block">
-        <div class="formula-title">8. 單螺旋槳盤面機身迎風阻力模型 (航速解鎖)</div>
+        <div class="formula-title">8. 單螺旋槳盤面機身迎風阻力模型</div>
         <div class="formula-box">
           A_ref = π × (D / 2)²  [m²]  (單個螺旋槳盤面面積)<br>
           F_x = AUW × g × tan(θ)                      [N]<br>
@@ -750,10 +750,10 @@
           V_max = √[ (2 × F_x) / (ρ × A_ref × C_D × η_aero) ] [m/s]
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>以單個螺旋槳盤面面積 $A_{\text{ref}}$ 作為整機機身等效迎風面積基準。前傾平飛時，垂直推力 $T \cos\theta = AUW$ 維持等高，前向推力 $F_x$ 克服空氣阻力。
+          <strong>說明：</strong>以單個螺旋槳盤面面積 $A_{\text{ref}}$ 作為整機機身等效迎風面積基準。前傾平飛時，垂直推力維持等高，前向推力克服空氣阻力。
         </p>
         <div class="formula-source">
-          <strong>理論來由：</strong><strong>流體力學平板阻力模型與機身特徵面積標定</strong>。避免了原先將所有旋翼總面積相加導致大槳無人機阻力被誇大 4~8 倍的嚴重失真，使得大尺寸無人機能計算出真實的大前傾高速巡航響應。
+          <strong>參考說明：</strong>採用單槳特徵面積標定，避免將所有旋翼面積相加造成大無人機阻力被誇大的問題，能算出合理的航速響應。
         </div>
       </div>
     </div>
@@ -1066,7 +1066,7 @@
     document.getElementById('lbl-pitch-deg').textContent = `${pitchDeg} °`;
     document.getElementById('lbl-aero-eff').textContent = `${aeroEff.toFixed(2)}`;
 
-    // 防打槳中心軸距自適應安全提示
+    // 防打槳馬達軸距自適應安全提示
     const propNotice = document.getElementById('prop-notice');
     let minDiagMm = 450;
     if (rotorCount === 4) {

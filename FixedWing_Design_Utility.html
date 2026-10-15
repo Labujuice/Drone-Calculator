@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>固定翼飛行器全包線設計與彈射起飛模擬器 ｜ Fixed-Wing Design Utility</title>
+<title>固定翼翼面與彈射起飛試算機 ｜ Fixed-Wing Design Utility</title>
 <style>
   :root {
     --bg: #f8fafc;
@@ -203,15 +203,15 @@
   <!-- 頂部導航 -->
   <div class="header">
     <div class="nav-left">
-      <a href="index.html" class="btn-back">← 回首頁 Hub</a>
-      <h2>固定翼飛行器全包線設計與彈射起飛模擬器</h2>
+      <a href="index.html" class="btn-back">← 回工具列表</a>
+      <h2>固定翼翼面與彈射起飛試算機</h2>
     </div>
     <span class="badge" id="top-badge">質量: 20kg ｜ 翼面積: 1.00m² ｜ 翼載: 20.0 kg/m²</span>
   </div>
 
-  <!-- 快速預設情境 -->
+  <!-- 常用範本 -->
   <div class="presets-bar">
-    <div class="preset-title">⚡ 快速機型情境切換 (一鍵連動幾何、重量與動力)：</div>
+    <div class="preset-title">⚡ 常用機型範本（一鍵帶入）：</div>
     <div class="scenario-btns">
       <button class="scenario-btn" onclick="applyPreset('handlaunch')">🛩️ 手拋長航輕量機 (2kg / 0.35m² / 靜推力 18N / AR=10)</button>
       <button class="scenario-btn" onclick="applyPreset('medium')">🦅 標準彈射偵察機 (20kg / 1.0m² / 靜推力 68.7N / AR=15)</button>
@@ -255,16 +255,16 @@
 
   <!-- Tab 分頁導覽列 -->
   <div class="tabs-nav">
-    <button class="tab-btn active" id="tab-btn-1" onclick="switchTab(1)">📐 1. 機翼幾何與速度雙向選型</button>
-    <button class="tab-btn" id="tab-btn-2" onclick="switchTab(2)">🚀 2. 彈射起飛動態軌跡模擬</button>
-    <button class="tab-btn" id="tab-btn-3" onclick="switchTab(3)">📈 3. 飛行包絡線與 6 大氣動性能圖表</button>
+    <button class="tab-btn active" id="tab-btn-1" onclick="switchTab(1)">📐 1. 機翼面積與速度試算</button>
+    <button class="tab-btn" id="tab-btn-2" onclick="switchTab(2)">🚀 2. 彈射起飛試算</button>
+    <button class="tab-btn" id="tab-btn-3" onclick="switchTab(3)">📈 3. 性能曲線與包絡線</button>
   </div>
 
-  <!-- ================= Tab 1: 機翼幾何與速度選型 ================= -->
+  <!-- ================= Tab 1: 機翼面積與速度試算 ================= -->
   <div class="tab-pane active" id="tab-pane-1">
     <div class="card-box">
       <div class="section-title">
-        <span>機翼面積與飛行速度雙向計算 (原 wing_simulator & speed_simulator 整合)</span>
+        <span>機翼面積與飛行速度試算</span>
       </div>
 
       <div class="mode-switch-bar">
@@ -362,12 +362,12 @@
     </div>
   </div>
 
-  <!-- ================= Tab 2: 彈射起飛動態模擬 ================= -->
+  <!-- ================= Tab 2: 彈射起飛試算 ================= -->
   <div class="tab-pane" id="tab-pane-2">
     <div class="card-box">
       <div class="section-title">
-        <span>彈射起飛運動學與離架下滑軌跡模擬 (原 catapult_simulator 升級)</span>
-        <span id="catapult-badge" style="font-size:0.78rem; font-weight:700; color:var(--success);">✅ 安全離架狀態</span>
+        <span>彈射起飛離架軌跡試算</span>
+        <span id="catapult-badge" style="font-size:0.78rem; font-weight:700; color:var(--success);">✅ 安全離架</span>
       </div>
 
       <div class="controls-grid">
@@ -417,7 +417,7 @@
       <!-- 彈射 2D 軌跡圖 -->
       <div class="chart-container">
         <div class="chart-header">
-          <span style="font-size:0.88rem; font-weight:700; color:var(--text);">🚀 彈射起飛 2D 垂直剖面軌跡圖 (Trajectory Dipping Profile)</span>
+          <span style="font-size:0.88rem; font-weight:700; color:var(--text);">🚀 彈射起飛高度變化曲線圖</span>
           <span id="cat-traj-note" style="font-size:0.75rem; color:var(--muted);">X 軸: 水平位移 (m) ｜ Y 軸: 垂直相對高度 (m)</span>
         </div>
         <canvas id="catapultChart"></canvas>
@@ -425,11 +425,11 @@
     </div>
   </div>
 
-  <!-- ================= Tab 3: 飛行包絡線與 6 大性能圖表 ================= -->
+  <!-- ================= Tab 3: 性能曲線與包絡線 ================= -->
   <div class="tab-pane" id="tab-pane-3">
     <div class="card-box">
       <div class="section-title">
-        <span>全包線氣動參數與發動機模型 (原 flight_envelope 深度引擎)</span>
+        <span>氣動參數與推力設定</span>
       </div>
 
       <div class="controls-grid">
@@ -523,7 +523,7 @@
       <div class="chart-container">
         <div class="chart-header">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <span style="font-size:0.9rem; font-weight:700; color:var(--text);">📊 氣動性能圖表庫：</span>
+            <span style="font-size:0.9rem; font-weight:700; color:var(--text);">📊 性能圖表切換：</span>
             <select class="chart-select" id="sel-chart" onchange="renderActiveChart()">
               <option value="1">1. 飛行包絡線 (Flight Envelope / V-h Diagram)</option>
               <option value="2">2. 巡航推力需求圖 (Cruise Speed vs. Required Thrust)</option>
@@ -540,11 +540,11 @@
     </div>
   </div>
 
-  <!-- 底部理論依據與算式推導卡片 -->
+  <!-- 底部計算公式與參考說明 -->
   <div class="theory-card">
     <div class="section-title">
-      <span>📐 系統核心物理模型、算式推導與理論依據 (Theoretical Formulations)</span>
-      <span style="font-size:0.75rem; color:var(--muted);">嚴謹航空工程氣動學、ISA 標準大氣與運動學模型</span>
+      <span>📐 計算公式與參考說明</span>
+      <span style="font-size:0.75rem; color:var(--muted);">包含標準大氣、機翼升阻比與彈射運動學速算公式</span>
     </div>
 
     <div class="theory-grid">
@@ -557,7 +557,7 @@
           S_req = W / (0.5 × ρ × V² × CL)
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>平飛時飛機升力必須完全平衡總重力 $W$。機翼載荷 $W/S$ 決定了飛機的起降失速速度門檻與抗側風巡航穩定性。
+          <strong>說明：</strong>平飛時飛機升力平衡總重力 $W$。翼載荷 $W/S$ 決定起降失速速度門檻與抗側風巡航穩定性。
         </p>
       </div>
 
@@ -570,26 +570,26 @@
           (L/D)_max = 1 / [ 2 × √(CD_0 × k) ]
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>全機阻力由寄生阻力 $C_{D0}$（機翼、機身、尾翼等形阻與摩擦阻力）與升力誘發的下洗誘導阻力 $k C_L^2$ 組成。大展弦比 $AR$ 能大幅壓低誘導阻力係數 $k$。
+          <strong>說明：</strong>全機阻力由寄生阻力 $C_{D0}$（機翼、機身等形阻與摩擦阻力）與升力誘發的下洗誘導阻力 $k C_L^2$ 組成。大展弦比 $AR$ 能降低誘導阻力係數 $k$。
         </p>
       </div>
 
       <!-- 算式 3 -->
       <div class="formula-block">
-        <div class="formula-title">3. ISA 標準大氣模型與高空推力衰減</div>
+        <div class="formula-title">3. ISA 標準大氣與高空推力衰減</div>
         <div class="formula-box">
           T(h) = T_sl - 0.0065 × h   [K]<br>
           ρ(h) = p(h) / (287.05 × T(h))<br>
           T_avail = T_sl × (ρ/ρ_sl)^0.7 × (1 - 0.2 M + 0.1 M²)
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>隨海拔爬升，大氣溫度與氣壓持續衰減。推進發動機的可用推力受空氣密度比與進氣馬赫數 $M$ 的綜合修正。
+          <strong>說明：</strong>隨海拔上升，大氣溫度與氣壓持續衰減。推進發動機的可用推力受空氣密度比與進氣速度修正。
         </p>
       </div>
 
       <!-- 算式 4 -->
       <div class="formula-block">
-        <div class="formula-title">4. 彈射起飛運動學與下滑最低高度</div>
+        <div class="formula-title">4. 彈射起飛運動學與離架最低高度</div>
         <div class="formula-box">
           a_x = T / m<br>
           t = (V_target - V_0x) / a_x<br>
@@ -597,7 +597,7 @@
           H_vertex = V_0y × t_v + 0.5 × a_y × t_v²  (t_v = -V_0y / a_y)
         </div>
         <p class="formula-desc">
-          <strong>物理意涵：</strong>彈射架離架初速若低於升力完全平衡速度，重力大於升力將產生負向垂直淨加速度，飛機會出現下陷。必須精確計算拋物線頂點以防墜地碰觸地面。
+          <strong>說明：</strong>彈射架離架初速若低於升力完全平衡速度，重力大於升力將產生負向垂直淨加速度，飛機會出現下陷。計算拋物線頂點可評估離架安全性。
         </p>
       </div>
     </div>

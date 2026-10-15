@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drone Engineering Hub ｜ 無人機工程計算工具箱</title>
+<title>無人機配置與起飛試算工具箱 ｜ Drone Quick Calculator</title>
 <style>
   :root {
     --bg: #f8fafc;
@@ -57,23 +57,23 @@
     border: 1px solid #bae6fd;
   }
 
-  /* 主視覺英雄區塊 (Hero) */
+  /* 主視覺區塊 */
   .hero {
-    padding: 48px 0 36px 0; text-align: center;
+    padding: 44px 0 32px 0; text-align: center;
   }
   .hero-pill {
     display: inline-flex; align-items: center; gap: 6px;
     background: #f1f5f9; border: 1px solid #cbd5e1;
     color: var(--muted); font-size: 0.78rem; font-weight: 600;
-    padding: 5px 14px; border-radius: 999px; margin-bottom: 16px;
+    padding: 5px 14px; border-radius: 999px; margin-bottom: 14px;
   }
   .hero h2 {
-    font-size: 2.1rem; font-weight: 900; margin: 0 0 12px 0;
-    color: var(--text); letter-spacing: -0.03em; line-height: 1.25;
+    font-size: 1.95rem; font-weight: 800; margin: 0 0 12px 0;
+    color: var(--text); letter-spacing: -0.02em; line-height: 1.3;
   }
   .hero p {
-    font-size: 1.02rem; color: var(--muted); margin: 0 auto;
-    max-width: 680px; line-height: 1.6;
+    font-size: 0.95rem; color: var(--muted); margin: 0 auto;
+    max-width: 660px; line-height: 1.6;
   }
 
   /* 工具卡片區 */
@@ -211,28 +211,28 @@
       <a href="index.html" class="brand">
         <div class="brand-icon">🚁</div>
         <div class="brand-text">
-          <h1>Drone Engineering Hub</h1>
-          <span>無人機動力與機電工程模擬中心</span>
+          <h1>Drone Calculator</h1>
+          <span>無人機快速配置與起飛評估小工具</span>
         </div>
       </a>
-      <span class="badge-tag">v2.5 全尺寸工程版</span>
+      <span class="badge-tag">實用速算版</span>
     </div>
   </header>
 
   <!-- 主視覺 -->
   <main class="container">
     <section class="hero">
-      <div class="hero-pill">⚙️ 專業級多旋翼動力學與續航計算庫</div>
-      <h2>精確推算每一次起飛的極限響應</h2>
+      <div class="hero-pill">⚙️ 快速試算無人機動力、配重與續航</div>
+      <h2>簡單好用的無人機配置試算工具</h2>
       <p>
-        結合空氣動力學致動盤動量理論、馬達定子電磁飽和極限與平飛阻力模型，提供從 1.5kg 輕量長航機到 25kg+ 工業重型機的完整機電模擬。
+        提供多旋翼與固定翼的動力配重、懸停時間、抗風航速與彈射起飛試算，方便快速挑選馬達、螺旋槳與電池組合。
       </p>
     </section>
 
     <!-- 工具卡片區 -->
     <div class="section-heading">
-      <h3>🛠️ 工程模擬工具箱 (Engineering Calculators)</h3>
-      <span style="font-size:0.75rem; color:var(--muted); font-weight:600;">2 個專業工具在線</span>
+      <h3>🛠️ 試算工具列表</h3>
+      <span style="font-size:0.75rem; color:var(--muted); font-weight:600;">2 個實用小工具</span>
     </div>
 
     <div class="tools-grid">
@@ -242,29 +242,29 @@
           <div class="card-header-line">
             <div class="tool-icon-wrap">⚡</div>
             <div class="tags-wrap">
-              <span class="tag hot">多旋翼核心</span>
+              <span class="tag hot">多旋翼</span>
               <span class="tag">4軸 / 6軸 / 8軸 / X8</span>
               <span class="tag">4S ~ 24S</span>
               <span class="tag">8" ~ 36" 螺旋槳</span>
             </div>
           </div>
 
-          <h3 class="tool-title">多旋翼全尺寸動力響應、航時與平板阻力航速模擬器</h3>
+          <h3 class="tool-title">多旋翼配置與續航試算機</h3>
           <p class="tool-desc">
-            全方位支援微型長航機、行業巡檢機與植保物流重載機。內建解封蘭金動量力效模型、定子飽和推重比 (TWR) 及以單旋翼為基準的前傾 Pitch 氣動極速計算機。
+            支援 4/6/8 軸與同軸 X8 多旋翼。拉動滑桿即可快速試算馬達、槳徑與電池搭配下的起飛總重、懸停時間、推重比與平飛航速。
           </p>
 
           <div class="feature-list">
-            <div class="feature-item">🌀 <strong>螺旋槳覆蓋：</strong>8" ～ 36" (螺距 20~350mm)</div>
-            <div class="feature-item">🔋 <strong>高壓電系：</strong>4S ～ 24S (P50B自動同步)</div>
-            <div class="feature-item">🚀 <strong>航速阻力：</strong>前傾角與最大平飛航速估算</div>
-            <div class="feature-item">📈 <strong>動態圖表：</strong>AUW vs 飛行時間多尺寸對比</div>
+            <div class="feature-item">🌀 <strong>螺旋槳試算：</strong>8" ～ 36" (螺距 20~350mm)</div>
+            <div class="feature-item">🔋 <strong>電池搭配：</strong>4S ～ 24S (P50B快速同步)</div>
+            <div class="feature-item">🚀 <strong>航速估算：</strong>前傾角度與平飛速度參考</div>
+            <div class="feature-item">📈 <strong>動態曲線：</strong>起飛重量 vs 飛行時間對比</div>
           </div>
         </div>
 
         <div class="card-footer">
-          <span class="meta-note">💡 支援即時雙向滑桿互動 ｜ 一鍵情境切換</span>
-          <div class="launch-btn">開啟計算機 <span>→</span></div>
+          <span class="meta-note">💡 支援即時滑桿調整 ｜ 常用範本一鍵帶入</span>
+          <div class="launch-btn">打開多旋翼試算機 <span>→</span></div>
         </div>
       </a>
 
@@ -274,25 +274,25 @@
         <a href="FixedWing_Design_Utility.html" class="tool-card secondary" style="text-decoration:none; color:inherit; cursor:pointer; transition:all 0.15s ease;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:1.3rem;">🛩️</span>
-            <span class="tag hot">全新在線</span>
+            <span class="tag hot">固定翼</span>
           </div>
-          <h4>固定翼全包線設計與彈射起飛模擬器</h4>
+          <h4>固定翼翼面與彈射起飛試算機</h4>
           <p>
-            整合機翼面積與速度雙向選型、彈射離架下滑 2D 軌跡圖、ISA 標準大氣模型與 6 大飛行包絡線性能圖表。
+            快速計算機翼面積、失速與起飛速度，並試算彈射架離架後的掉高下陷與簡易飛行性能。
           </p>
           <div style="font-size:0.75rem; font-weight:700; color:var(--accent); margin-top:auto; display:flex; align-items:center; gap:4px;">
-            開啟固定翼工具 <span>→</span>
+            打開固定翼試算機 <span>→</span>
           </div>
         </a>
 
         <div class="tool-card secondary">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:1.3rem;">🔋</span>
-            <span class="tag">規劃籌備中</span>
+            <span class="tag">規劃中</span>
           </div>
-          <h4>高倍率電池組放電與溫升曲線</h4>
+          <h4>電池組放電與溫升試算</h4>
           <p>
-            針對 21700 (P45B/P50B) 與固態鋰電在持續大電流放電下的內阻壓降與極限熱平衡估算。
+            規劃支援 21700 (P45B/P50B) 與鋰聚電池在大電流放電下的壓降與溫度變化評估。
           </p>
         </div>
       </div>
@@ -303,24 +303,24 @@
       <div class="banner-item">
         <div class="banner-icon">📐</div>
         <div class="banner-text">
-          <h5>嚴謹物理工程模型</h5>
-          <p>以蘭金－弗勞德動量理論、葉素理論與電機定子磁熱飽和極限作為算式核心支柱。</p>
+          <h5>即時連動試算</h5>
+          <p>調整任何滑桿即刻動態反饋，快速掌握配重、推力與懸停時間。</p>
         </div>
       </div>
 
       <div class="banner-item">
         <div class="banner-icon">🎯</div>
         <div class="banner-text">
-          <h5>單旋翼迎風阻力校正</h5>
-          <p>徹底解決多旋翼整面盤面阻力過大之矛盾，精準反映 22"~30" 大槳的大傾角平飛速度。</p>
+          <h5>實用航速估算</h5>
+          <p>以單槳特徵面積估算平飛阻力，提供貼合實際的巡航速度參考。</p>
         </div>
       </div>
 
       <div class="banner-item">
         <div class="banner-icon">📊</div>
         <div class="banner-text">
-          <h5>白灰簡約工程美學</h5>
-          <p>極簡白灰低對比底色搭配高清晰工程藍，長時間研發設計與調參不刺眼。</p>
+          <h5>清爽易讀的介面</h5>
+          <p>白色與灰色為底的簡約介面，無論在室內或戶外場地使用都清晰好讀。</p>
         </div>
       </div>
     </div>
@@ -329,7 +329,7 @@
   <!-- 頁尾 -->
   <footer>
     <div class="container">
-      <p>Drone Engineering Hub &copy; 2026 ｜ Multi-Rotor Aerodynamics & Powertrain Simulation</p>
+      <p>Drone Calculator ｜ 簡易無人機配置與起飛評估工具</p>
     </div>
   </footer>
 
