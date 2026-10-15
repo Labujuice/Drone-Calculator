@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四軸長續航與全架構配重模擬器 (含 TWR 與 Pitch 平板阻力航速計算機)</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-inner: #0f172a;
+    --border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-alt: #a855f7;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body {
+    margin: 0; padding: 18px;
+    background: var(--bg); color: var(--text);
+  }
+  .container { max-width: 1140px; margin: 0 auto; }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;
+  }
+  .header h2 { margin: 0; font-size: 1.25rem; color: var(--accent); }
+  .badge {
+    background: rgba(56, 189, 248, 0.15); color: var(--accent);
+    padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+  }
+
+  /* 核心指標 6 格 */
+  .metrics-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px;
+  }
+  @media (max-width: 1024px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 580px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+  .metric-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; text-align: center;
+  }
+  .metric-label { font-size: 0.74rem; color: var(--muted); margin-bottom: 5px; }
+  .metric-value { font-size: 1.3rem; font-weight: 700; }
+  .metric-sub { font-size: 0.7rem; margin-top: 4px; color: var(--muted); }
+
+  /* 模組化參數控制區塊 */
+  .section-title {
+    font-size: 0.85rem; font-weight: 700; color: var(--accent);
+    margin: 16px 0 8px 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+  }
+  .controls-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px;
+  }
+  @media (max-width: 880px) { .controls-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .control-group {
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--card); padding: 11px 13px;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .control-group.battery-group {
+    background: rgba(56, 189, 248, 0.04); border-color: rgba(56, 189, 248, 0.35);
+  }
+  .control-group.prop-group {
+    background: rgba(168, 85, 247, 0.04); border-color: rgba(168, 85, 247, 0.35);
+  }
+  .control-group.speed-group {
+    background: rgba(34, 197, 94, 0.04); border-color: rgba(34, 197, 94, 0.35);
+  }
+  .control-header { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; }
+  .control-val { font-weight: 700; color: var(--accent); }
+  input[type="range"] {
+    width: 100%; accent-color: var(--accent); cursor: pointer; margin: 3px 0;
+  }
+  .preset-btns { display: flex; gap: 5px; margin-top: auto; }
+  
+  /* 按鈕樣式與高亮切換狀態 */
+  .preset-btn {
+    flex: 1; background: #0f172a; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.15s ease; text-align: center;
+    user-select: none;
+  }
+  .preset-btn:hover:not(.active) {
+    border-color: var(--accent); color: var(--accent); background: rgba(56, 189, 248, 0.12);
+  }
+  .preset-btn.active {
+    border-color: var(--accent);
+    color: #0f172a;
+    background: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+  }
+
+  /* 重量分佈條 */
+  .weight-bar-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; margin: 14px 0;
+  }
+  .weight-bar-header {
+    display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; flex-wrap: wrap; gap: 6px;
+  }
+  .weight-bar-track {
+    width: 100%; height: 14px; background: #0f172a; border-radius: 999px;
+    overflow: hidden; display: flex; border: 1px solid var(--border);
+  }
+  .wb-seg { height: 100%; transition: width 0.2s; }
+  .weight-legend {
+    display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 0.74rem; color: var(--muted);
+  }
+
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; position: relative;
+  }
+  .chart-title {
+    font-size: 0.88rem; font-weight: 600; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem; color: var(--muted); }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  canvas { width: 100%; height: 320px; display: block; }
+
+  /* 新增：Pitch 與飛行速度計算機區塊 */
+  .speed-calc-card {
+    background: var(--card); border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 10px; padding: 16px; margin-top: 18px;
+  }
+  .speed-calc-header {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px;
+  }
+  .speed-calc-header h3 { margin: 0; font-size: 1.05rem; color: var(--success); }
+  .speed-results-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px;
+  }
+  @media (max-width: 820px) { .speed-results-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  /* 底部理論區塊 */
+  .theory-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 22px; margin-top: 22px;
+  }
+  .theory-header {
+    border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 18px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .theory-header h3 { margin: 0; font-size: 1.15rem; color: var(--accent); }
+  .theory-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  }
+  @media (max-width: 820px) { .theory-grid { grid-template-columns: 1fr; } }
+  
+  .formula-block {
+    background: var(--card-inner); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .formula-title {
+    font-size: 0.86rem; font-weight: 700; color: var(--accent);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .formula-box {
+    background: rgba(30, 41, 59, 0.7); border-left: 3px solid var(--accent);
+    padding: 8px 12px; border-radius: 4px; font-family: "Fira Code", monospace, Consolas;
+    font-size: 0.84rem; color: #38bdf8; overflow-x: auto;
+  }
+  .formula-desc {
+    font-size: 0.78rem; line-height: 1.5; color: var(--muted); margin: 0;
+  }
+  .formula-source {
+    font-size: 0.72rem; color: #cbd5e1; background: rgba(51, 65, 85, 0.4);
+    padding: 5px 8px; border-radius: 4px; border: 1px dashed var(--border);
+  }
+  .formula-source strong { color: var(--accent-alt); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>四軸長續航與全架構配重模擬器</h2>
+    <span class="badge" id="top-badge">電池系統：6S2P (21.6V / 10,000mAh)</span>
+  </div>
+
+  <!-- 頂部核心指標 6 格 -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">起飛總重 (AUW)</div>
+      <div class="metric-value" id="val-auw">1,912 g</div>
+      <div class="metric-sub" id="sub-auw">距離 2kg 門檻剩 88g</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">預估實戰飛行時間</div>
+      <div class="metric-value" id="val-time">49.4 min</div>
+      <div class="metric-sub" id="sub-time">純靜風懸停: 54.3 min</div>
+    </div>
+    <!-- 新增核心指標：推重比 (TWR) 與最大推力 -->
+    <div class="metric-card">
+      <div class="metric-label">最大推重比 (TWR)</div>
+      <div class="metric-value" id="val-twr" style="color:var(--success);">2.45 : 1</div>
+      <div class="metric-sub" id="sub-twr">最大總推力: 4,680g (單軸 1,170g)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">電池總能量 / 可用能量</div>
+      <div class="metric-value" id="val-energy">216 Wh</div>
+      <div class="metric-sub" id="sub-energy">可用 (90%): 194.4 Wh</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">整機功耗 / 懸停力效</div>
+      <div class="metric-value" id="val-power">236 W</div>
+      <div class="metric-sub" id="sub-eff">力效: 9.68 g/W｜單軸: 478g</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">懸停轉速 / 懸停油門</div>
+      <div class="metric-value" id="val-rpm">3,920 RPM</div>
+      <div class="metric-sub" id="sub-thr">懸停油門: 40% (甜蜜點區間)</div>
+    </div>
+  </div>
+
+  <!-- 第 1 區塊：螺旋槳配置 -->
+  <div class="section-title">
+    <span>🌀 1. 螺旋槳配置 (直徑 8" ～ 20" 擴展 ｜ 螺距 Pitch 20mm ～ 80mm)</span>
+    <span id="prop-notice" style="font-size:0.72rem; color:var(--muted);">💡 12"以內適配原定450mm軸距；>13"需擴充機臂軸距</span>
+  </div>
+  <div class="controls-grid">
+    <!-- 直徑 -->
+    <div class="control-group prop-group">
+      <div class="control-header">
+        <span>螺旋槳直徑 (吋)</span>
+        <span class="control-val" id="lbl-prop-d">12.0 吋</span>
+      </div>
+      <input type="range" id="slider-prop-d" min="8.0" max="20.0" step="0.5" value="12.0">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-prop-d-9" onclick="setVal('slider-prop-d', 9.0)">9" (小軸距)</button>
+        <button class="preset-btn" id="btn-prop-d-12" onclick="setVal('slider-prop-d', 12.0)">12" (原定上限)</button>
+        <button class="preset-btn" id="btn-prop-d-15" onclick="setVal('slider-prop-d', 15.0)">15" (大長程)</button>
+        <button class="preset-btn" id="btn-prop-d-18" onclick="setVal('slider-prop-d', 18.0)">18" (重巡航)</button>
+      </div>
+    </div>
+
+    <!-- 螺距 -->
+    <div class="control-group prop-group">
+      <div class="control-header">
+        <span>螺旋槳螺距 Pitch (mm)</span>
+        <span class="control-val" id="lbl-prop-p">45 mm (~1.77")</span>
+      </div>
+      <input type="range" id="slider-prop-p" min="20" max="80" step="1" value="45">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-prop-p-25" onclick="setVal('slider-prop-p', 25)">25mm (低轉扭矩)</button>
+        <button class="preset-btn" id="btn-prop-p-45" onclick="setVal('slider-prop-p', 45)">45mm (標準折疊)</button>
+        <button class="preset-btn" id="btn-prop-p-75" onclick="setVal('slider-prop-p', 75)">75mm (高升程/大距)</button>
+      </div>
+    </div>
+
+    <!-- 葉片數 -->
+    <div class="control-group prop-group">
+      <div class="control-header">
+        <span>螺旋槳葉片數</span>
+        <span class="control-val" id="lbl-blades">2 葉片 (雙葉折疊)</span>
+      </div>
+      <div style="padding: 6px 0; font-size:0.75rem; color:var(--muted);">
+        三葉槳在相同直徑下提供較高推力，但尾流干擾使懸停力效折減約 10%。
+      </div>
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-blade-2" onclick="setBlades(2)">二葉折疊槳 (推薦)</button>
+        <button class="preset-btn" id="btn-blade-3" onclick="setBlades(3)">三葉槳 (-10%力效)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第 2 區塊：電池系統配置 -->
+  <div class="section-title">
+    <span>🔋 2. 電池系統 (6S~12S / 1P~4P 自動連動，或手動自訂容量與包重)</span>
+    <button class="preset-btn" style="flex:none; padding:4px 10px;" onclick="syncP50B()">🔄 依 S/P 重設為 P50B 預設值</button>
+  </div>
+  <div class="controls-grid">
+    <!-- 串聯 S -->
+    <div class="control-group battery-group">
+      <div class="control-header">
+        <span>電池串聯數 (S)</span>
+        <span class="control-val" id="lbl-s">6S (標稱 21.6V)</span>
+      </div>
+      <input type="range" id="slider-s" min="6" max="12" step="1" value="6">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-s-6" onclick="setSeries(6)">6S</button>
+        <button class="preset-btn" id="btn-s-8" onclick="setSeries(8)">8S</button>
+        <button class="preset-btn" id="btn-s-10" onclick="setSeries(10)">10S</button>
+        <button class="preset-btn" id="btn-s-12" onclick="setSeries(12)">12S</button>
+      </div>
+    </div>
+
+    <!-- 並聯 P -->
+    <div class="control-group battery-group">
+      <div class="control-header">
+        <span>電池並聯數 (P)</span>
+        <span class="control-val" id="lbl-p">2P (共 12 顆電芯)</span>
+      </div>
+      <input type="range" id="slider-p" min="1" max="4" step="1" value="2">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-p-1" onclick="setParallel(1)">1P (輕量)</button>
+        <button class="preset-btn" id="btn-p-2" onclick="setParallel(2)">2P (標準)</button>
+        <button class="preset-btn" id="btn-p-3" onclick="setParallel(3)">3P (長程)</button>
+      </div>
+    </div>
+
+    <!-- DoD -->
+    <div class="control-group battery-group">
+      <div class="control-header">
+        <span>放電深度 (DoD) & 抗風</span>
+        <span class="control-val" id="lbl-dod">90% (-10%抗風)</span>
+      </div>
+      <input type="range" id="slider-dod" min="80" max="94" step="2" value="90">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-dod-85" onclick="setVal('slider-dod', 85)">保守 85%</button>
+        <button class="preset-btn" id="btn-dod-90" onclick="setVal('slider-dod', 90)">P50B 深放 90%</button>
+      </div>
+    </div>
+
+    <!-- 容量自訂 -->
+    <div class="control-group battery-group">
+      <div class="control-header">
+        <span>電池容量 (可手動覆寫)</span>
+        <span class="control-val" id="lbl-cap">10,000 mAh</span>
+      </div>
+      <input type="range" id="slider-cap" min="4000" max="30000" step="200" value="10000">
+      <div class="preset-btns">
+        <span style="font-size:0.68rem; color:var(--muted); line-height:22px;" id="cap-src-note">⚡ 已同步 P50B (5,000mAh/並)</span>
+      </div>
+    </div>
+
+    <!-- 重量自訂 -->
+    <div class="control-group battery-group">
+      <div class="control-header">
+        <span>電池包總重 (可手動覆寫)</span>
+        <span class="control-val" id="lbl-bat-w">900 g</span>
+      </div>
+      <input type="range" id="slider-bat-w" min="350" max="3500" step="10" value="900">
+      <div class="preset-btns">
+        <span style="font-size:0.68rem; color:var(--muted); line-height:22px;" id="bat-src-note">⚡ 已同步 12顆 P50B 成組包重</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第 3 區塊：機身結構、雲台與馬達配置 -->
+  <div class="section-title">
+    <span>🛩️ 3. 機身結構、雲台與馬達配置 (機架範圍推升至 1,200g，雲台 50g~400g)</span>
+  </div>
+  <div class="controls-grid">
+    <!-- 機架 -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>機架與折疊機構總重</span>
+        <span class="control-val" id="lbl-frame">460 g</span>
+      </div>
+      <input type="range" id="slider-frame" min="360" max="1200" step="10" value="460">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-frame-460" onclick="setVal('slider-frame', 460)">方案二：碳管 (460g)</button>
+        <button class="preset-btn" id="btn-frame-620" onclick="setVal('slider-frame', 620)">方案一：射出 (620g)</button>
+        <button class="preset-btn" id="btn-frame-950" onclick="setVal('slider-frame', 950)">重型機構 (950g)</button>
+      </div>
+    </div>
+
+    <!-- 雲台 -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>雲台含相機總重</span>
+        <span class="control-val" id="lbl-gimbal">150 g</span>
+      </div>
+      <input type="range" id="slider-gimbal" min="50" max="400" step="10" value="150">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-gimbal-85" onclick="setVal('slider-gimbal', 85)">微型微單 (85g)</button>
+        <button class="preset-btn" id="btn-gimbal-150" onclick="setVal('slider-gimbal', 150)">原定規格 (150g)</button>
+        <button class="preset-btn" id="btn-gimbal-280" onclick="setVal('slider-gimbal', 280)">三軸大鏡頭 (280g)</button>
+      </div>
+    </div>
+
+    <!-- PCBA -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>PCBA 與線材總重</span>
+        <span class="control-val" id="lbl-pcba-w">130 g</span>
+      </div>
+      <input type="range" id="slider-pcba-w" min="70" max="300" step="5" value="130">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-pcba-95" onclick="setVal('slider-pcba-w', 95)">極簡航電 (95g)</button>
+        <button class="preset-btn" id="btn-pcba-130" onclick="setVal('slider-pcba-w', 130)">標準航電 (130g)</button>
+        <button class="preset-btn" id="btn-pcba-210" onclick="setVal('slider-pcba-w', 210)">+AI載板 (210g)</button>
+      </div>
+    </div>
+
+    <!-- 馬達重量/定子 -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>單顆馬達重 & 定子構型</span>
+        <span class="control-val" id="lbl-motor-w">56g (3106)</span>
+      </div>
+      <input type="range" id="slider-motor-w" min="44" max="110" step="2" value="56">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-stator-3106" onclick="setStator('3106', 56)">3106 盤式(56g)</button>
+        <button class="preset-btn" id="btn-stator-2808" onclick="setStator('2808', 60)">2808 標準(60g)</button>
+        <button class="preset-btn" id="btn-stator-2810" onclick="setStator('2810', 76)">2810 高柱(76g)</button>
+      </div>
+    </div>
+
+    <!-- KV -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>馬達 KV 值</span>
+        <span class="control-val" id="lbl-kv">480 KV</span>
+      </div>
+      <input type="range" id="slider-kv" min="150" max="1150" step="10" value="480">
+      <div class="preset-btns">
+        <button class="preset-btn" id="btn-kv-240" onclick="setVal('slider-kv', 240)">240KV (大槳/12S)</button>
+        <button class="preset-btn" id="btn-kv-480" onclick="setVal('slider-kv', 480)">480KV (6S標準)</button>
+        <button class="preset-btn" id="btn-kv-750" onclick="setVal('slider-kv', 750)">750KV (小槳/高速)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重量佔比視覺化條 -->
+  <div class="weight-bar-card">
+    <div class="weight-bar-header">
+      <span id="wb-left-note">整機配重實時拆解</span>
+      <span id="wb-summary">總重 1,912 g｜電池能量密度: 240 Wh/kg</span>
+    </div>
+    <div class="weight-bar-track">
+      <div class="wb-seg" id="seg-bat" style="background:#38bdf8; width:47%"></div>
+      <div class="wb-seg" id="seg-frame" style="background:#a855f7; width:24%"></div>
+      <div class="wb-seg" id="seg-motor" style="background:#22c55e; width:14%"></div>
+      <div class="wb-seg" id="seg-gimbal" style="background:#f59e0b; width:8%"></div>
+      <div class="wb-seg" id="seg-pcba" style="background:#ec4899; width:7%"></div>
+    </div>
+    <div class="weight-legend">
+      <span class="legend-item"><i class="dot" style="background:#38bdf8"></i><span id="leg-bat">電池: 900g</span></span>
+      <span class="legend-item"><i class="dot" style="background:#a855f7"></i><span id="leg-frame">機架: 460g</span></span>
+      <span class="legend-item"><i class="dot" style="background:#22c55e"></i><span id="leg-motor">馬達+槳: 272g</span></span>
+      <span class="legend-item"><i class="dot" style="background:#f59e0b"></i><span id="leg-gimbal">雲台: 150g</span></span>
+      <span class="legend-item"><i class="dot" style="background:#ec4899"></i><span id="leg-pcba">PCBA線材: 130g</span></span>
+    </div>
+  </div>
+
+  <!-- 曲線圖表 -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <span id="chart-main-title">起飛總重 (AUW) vs. 實戰飛行時間動態曲線（動態自適應多直徑對比）</span>
+      <div class="legend" id="chart-legend"></div>
+    </div>
+    <canvas id="simChart"></canvas>
+  </div>
+
+  <!-- 新增欄位：旋停圖示下方的 Pitch 角度與最大飛行速度計算機 -->
+  <div class="speed-calc-card">
+    <div class="speed-calc-header">
+      <h3>🚀 4. 前傾 Pitch 角度與最大飛行速度計算機 (平板阻力模型)</h3>
+      <span id="speed-status-badge" style="font-size:0.75rem; color:var(--success); font-weight:600;">✅ 可穩定維持等高平飛</span>
+    </div>
+
+    <div class="controls-grid">
+      <!-- Pitch 角度滑桿 -->
+      <div class="control-group speed-group">
+        <div class="control-header">
+          <span>前傾俯仰角度 (Pitch θ)</span>
+          <span class="control-val" id="lbl-pitch-deg" style="color:var(--success);">30 °</span>
+        </div>
+        <input type="range" id="slider-pitch-deg" min="5" max="65" step="1" value="30">
+        <div class="preset-btns">
+          <button class="preset-btn" id="btn-pitch-15" onclick="setVal('slider-pitch-deg', 15)">15° (慢速巡航)</button>
+          <button class="preset-btn active" id="btn-pitch-30" onclick="setVal('slider-pitch-deg', 30)">30° (標準航拍)</button>
+          <button class="preset-btn" id="btn-pitch-45" onclick="setVal('slider-pitch-deg', 45)">45° (高速平飛)</button>
+          <button class="preset-btn" id="btn-pitch-max" onclick="setPitchToLimit()">極限平飛角</button>
+        </div>
+      </div>
+
+      <!-- 氣動效率係數滑桿 (預設 0.8) -->
+      <div class="control-group speed-group">
+        <div class="control-header">
+          <span>氣動效率係數 (η_aero)</span>
+          <span class="control-val" id="lbl-aero-eff" style="color:var(--success);">0.80</span>
+        </div>
+        <input type="range" id="slider-aero-eff" min="0.40" max="1.20" step="0.05" value="0.80">
+        <div class="preset-btns">
+          <button class="preset-btn" id="btn-eff-070" onclick="setVal('slider-aero-eff', 0.70)">0.70 (流線型機身)</button>
+          <button class="preset-btn active" id="btn-eff-080" onclick="setVal('slider-aero-eff', 0.80)">0.80 (標準預設)</button>
+          <button class="preset-btn" id="btn-eff-100" onclick="setVal('slider-aero-eff', 1.00)">1.00 (多外掛機身)</button>
+        </div>
+      </div>
+
+      <!-- 阻力模型參考說明 -->
+      <div class="control-group speed-group" style="justify-content:center;">
+        <div style="font-size:0.75rem; color:var(--muted); line-height:1.45;">
+          <strong>模型定義：</strong>以 4 支旋翼總盤面面積 $A_{\text{total}} = \pi D^2$ 作為平板阻力基準面，氣動平板阻力 $C_D = 1.28$。水平速度滿足 $F_x = m g \tan\theta = \frac{1}{2} \rho V^2 A C_D \eta$。
+        </div>
+      </div>
+    </div>
+
+    <!-- 速度與推力輸出指標 -->
+    <div class="speed-results-grid">
+      <div class="metric-card" style="background:#0f172a; border-color:rgba(34,197,94,0.4);">
+        <div class="metric-label">最大飛行速度 (V_max)</div>
+        <div class="metric-value" id="val-speed-kmh" style="color:var(--success);">36.8 km/h</div>
+        <div class="metric-sub" id="sub-speed-ms">10.2 m/s (約 19.8 節)</div>
+      </div>
+      <div class="metric-card" style="background:#0f172a;">
+        <div class="metric-label">前向水平推力分量 (F_x)</div>
+        <div class="metric-value" id="val-thrust-fx">1,104 g</div>
+        <div class="metric-sub" id="sub-thrust-fx">10.8 N (AUW × tan θ)</div>
+      </div>
+      <div class="metric-card" style="background:#0f172a;">
+        <div class="metric-label">等高所需總推力 (T_req)</div>
+        <div class="metric-value" id="val-thrust-req">2,208 g</div>
+        <div class="metric-sub" id="sub-thrust-req">佔最大推力 47% (餘裕充裕)</div>
+      </div>
+      <div class="metric-card" style="background:#0f172a;">
+        <div class="metric-label">極限平飛傾角與極速</div>
+        <div class="metric-value" id="val-speed-limit" style="color:var(--accent);">54.2 km/h</div>
+        <div class="metric-sub" id="sub-speed-limit">極限傾角: 65.9° (@TWR 2.45)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部完整算式與物理工程依據 (數學理論區塊) -->
+  <div class="theory-card">
+    <div class="theory-header">
+      <h3>📐 系統核心物理模型、算式推導與理論依據 (Theoretical Formulations)</h3>
+      <span style="font-size:0.75rem; color:var(--muted);">嚴謹空氣動力學、電動旋翼與機電能量模型</span>
+    </div>
+
+    <div class="theory-grid">
+      <!-- 算式 1：致動盤動量理論與力效 -->
+      <div class="formula-block">
+        <div class="formula-title">1. 槳盤負載 (Disk Loading) 與致動盤基礎力效</div>
+        <div class="formula-box">
+          A_total = 4 × π × (D / 2)² = π × D²<br>
+          DL = AUW / A_total   [g/cm²]<br>
+          η_base = k₀ / √DL   (k₀ ≈ 7.78, 單位 g/W)
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>將 4 個旋翼投影面積求和得到總掃掠面積 $A_{\text{total}}$。槳盤負載 $DL$ 越小，代表單位面積需加速推移的空氣質量越多、但誘導速度越低，能量轉換動能的動量損失越小。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>源自<strong>蘭金－弗勞德致動盤動量理論 (Rankine-Froude Momentum Theory)</strong>。理想推力 $T = 2\rho A v_i^2$，誘導功率 $P_i = T v_i = T^{3/2}/\sqrt{2\rho A}$。理想懸停力效為 $T/P_i = \sqrt{2\rho / DL}$。實務上乘上典型旋翼品質因數 (Figure of Merit, $FM \approx 0.70$) 與馬達/電調轉換效率 ($\eta_e \approx 0.85$)，常數折減歸一化後得到 $k_0 \approx 7.78$。
+        </div>
+      </div>
+
+      <!-- 算式 2：綜合懸停系統力效校正模型 -->
+      <div class="formula-block">
+        <div class="formula-title">2. 多維氣動與機電損耗修正力效 (System Efficiency)</div>
+        <div class="formula-box">
+          η_hover = min(13.5, η_base × f_blade × f_stator × f_pd × f_throttle)
+        </div>
+        <p class="formula-desc">
+          <strong>修正因子定義：</strong><br>
+          • <strong>f_blade (葉片干擾)：</strong>雙葉=1.00；三葉=0.90 (-10%)。<br>
+          • <strong>f_stator (定子幾何)：</strong>3106 盤式=1.02；2808=1.00；2810 高定子=0.95。<br>
+          • <strong>f_pd (螺距徑向比 P/D)：</strong>最佳區間 0.22~0.48；過扁產生翼面摩擦阻力，過大誘發葉根分離失速。<br>
+          • <strong>f_throttle (電調斬波損耗)：</strong>油門 &lt; 28% 時 MOSFET 高頻切換斬波損耗驟增；&gt; 68% 銅損急遽升高。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>結合<strong>葉素理論 (Blade Element Theory)</strong> 中的葉片誘導阻力干擾，與無刷馬達定子電磁幾何（力矩常數 $K_t \propto D_{\text{stator}}^2 \cdot H$）。盤式馬達因旋轉半徑大力臂長，低轉懸停銅損更低；三葉槳因後葉持續切割前葉產生的下洗葉尖渦流 (Tip Vortex)，誘導阻力大幅增加。
+        </div>
+      </div>
+
+      <!-- 算式 3：旋翼懸停轉速 (RPM) 與電調懸停油門預估 -->
+      <div class="formula-block">
+        <div class="formula-title">3. 懸停轉速 (RPM) 與電調佔空比油門估算</div>
+        <div class="formula-box">
+          RPM_hover ≈ 3980 × (12 / D)^1.45 × √(45 / P_mm) × √(T_axis / 480) × f_b<br>
+          RPM_no_load = KV × (S × 3.37V)<br>
+          Throttle_hover = (RPM_hover / RPM_no_load) × 100%
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>計算四軸在產生 $T_{\text{axis}} = AUW / 4$ 推力時，每顆馬達必須維持的實際旋轉速度，並與當前電壓及馬達 KV 值的空載反電動勢轉速對比，求出電調 PWM 佔空比（Duty Cycle）。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>多旋翼空氣動力學中推力經驗公式 $T = C_T \rho n^2 D^4$。在定微元攻角下，轉速 $n \propto \sqrt{T} / (D^{1.45} \sqrt{P})$。馬達反電動勢公式 $E = K_e \cdot \omega$（其中 $K_e = 1/KV$），負載下端電壓為 $V_{\text{load}} \approx S \times 3.37\text{V}$，油門百分比即反映定子繞組的有效等效導通時間。
+        </div>
+      </div>
+
+      <!-- 算式 4：螺旋槳結構質量二次方縮放律 -->
+      <div class="formula-block">
+        <div class="formula-title">4. 螺旋槳重量非線性幾何縮放模型</div>
+        <div class="formula-box">
+          W_props = 48g × (D / 12)^2.15 × [1 + (P_mm - 45) × 0.0025] × f_b_weight
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>大直徑螺旋槳（如 15"~20"）若僅按長度一次方估算會嚴重失真。隨著長度增加，為避免葉尖拉力引發彎曲形變，槳根厚度與弦長必須等比例加厚。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>固體力學與薄壁結構幾何相似律 (Geometric Scaling Laws)。均勻斷面梁在保持抗彎剛度 $EI$ 時質量隨長度立方增長；多旋翼薄碳纖槳葉經葉根局部補強實測，質量隨直徑之 $2.10 \sim 2.20$ 次方（本模型取 $2.15$）指數上升。三葉槳金屬槳夾座與多一片葉片帶入 $1.55$ 倍增長係數。
+        </div>
+      </div>
+
+      <!-- 算式 5：電池可用能量與深放電模型 -->
+      <div class="formula-block">
+        <div class="formula-title">5. 電池電氣總能量與可用能量模型</div>
+        <div class="formula-box">
+          E_total = (S × 3.6V) × (Cap_mAh / 1000)   [Wh]<br>
+          E_usable = E_total × (DoD / 100)          [Wh]<br>
+          W_bat_auto = S × P × 70.5g + (S × P × 2.8g + 20g)
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>以單顆 Molicel P50B 21700 電芯（3.6V 標稱、5,000mAh、約 70.5g）為基底。成組附加重量包含純鎳帶、絕緣青稞紙、矽膠電源線與 XT60 插頭。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>電化學能量儲備公式 $E = \int V(t) I(t) dt$。在懸停工況下，四軸放電倍率僅約 $0.5\text{C} \sim 0.8\text{C}$，極遠低於 P50B 的 45A 連續放電限制，因此佩克特效應 (Peukert's Law) 造成的容量縮水微乎其微，放電截止電壓設為單節 2.85V 時，可用電量係數可安全設定為 $90\%$。
+        </div>
+      </div>
+
+      <!-- 算式 6：整機功率平衡與真實飛行時間推導 -->
+      <div class="formula-block">
+        <div class="formula-title">6. 功率平衡方程式與實戰續航時間推導</div>
+        <div class="formula-box">
+          P_hover_motor = AUW / η_hover             [W]<br>
+          P_hover_total = P_hover_motor + P_avionics [W] (P_avionics = 15W)<br>
+          P_real = P_hover_total × 1.10             [W] (含 10% 抗風機動損耗)<br>
+          FlightTime_real = (E_usable / P_real) × 60 [分鐘]
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>起飛總重除以系統力效得出四軸旋翼輸出機械升力所需的電功率；加上飛控、圖傳、GPS 與三軸雲台運作的 15W 基礎功耗；最後乘上 1.10（10% 裕度）以模擬真實飛行時為抵抗側風傾斜所產生的垂直推力向量損失與姿態高頻微調消耗。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>熱力學第一定律與能量守恆定律 $E = P \cdot t$。實戰巡航時無人機前傾角度 $\theta$ 需提供前向分力 $T \sin\theta = D_{\text{parasite}}$，垂直升力需補償為 $T \cos\theta = AUW$，導致整機推力需求增為 $AUW / \cos\theta$；結合航向調整與抗風擾動，工程實務上長續航機多保留 $10\% \sim 15\%$ 動態功耗補償係數。
+        </div>
+      </div>
+
+      <!-- 新增算式 7：最大推力與推重比 (TWR) -->
+      <div class="formula-block">
+        <div class="formula-title">7. 最大總推力 (T_max) 與推重比 (TWR) 模型</div>
+        <div class="formula-box">
+          TWR = T_max / AUW<br>
+          T_max ≈ AUW × (1.0 / (Throttle_hover / 100))^1.05 × f_sag<br>
+          T_axis_max = T_max / 4   [g]
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>推重比（Thrust-to-Weight Ratio, TWR）是無人機加速性能、爬升率與抗風姿態控制裕度的決定性指標。當整機起飛重為 2,000g，最大推力為 4,000g 時，推重比剛好為 2.0。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong>無刷電調（ESC）線性化響應與空氣動力學推力關係。在已定轉速比下，若懸停油門為 $\tau_{\text{hover}}$，全油門推力受電壓大電流壓降折減係數 $f_{\text{sag}} \approx 0.95$ 修正。長續航機最佳 TWR 建議維持在 $1.8 \sim 2.5$ 之間，過低無法抗 5 級以上強風，過高則意味著馬達定子超規過重。
+        </div>
+      </div>
+
+      <!-- 新增算式 8：平板阻力模型與前傾最大航速方程式 -->
+      <div class="formula-block">
+        <div class="formula-title">8. 平板阻力模型與前傾 Pitch 最大航速推導</div>
+        <div class="formula-box">
+          F_x = AUW × g × tan(θ)                      [N]<br>
+          T_req = AUW / cos(θ)                        [g]<br>
+          F_drag = 0.5 × ρ × V² × A_total × C_D × η_aero [N]<br>
+          V_max = √[ (2 × F_x) / (ρ × A_total × C_D × η_aero) ] [m/s]
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>四軸在前傾角度 $\theta$ 進行等高平飛時，旋翼總推力分解為垂直分量 $T \cos\theta = m g$（克服重力維持高度）與前向分量 $F_x = m g \tan\theta$（克服空氣阻力加速）。當前向推力等於平板氣動阻力時達到最大等速飛行速度 $V_{\text{max}}$。
+        </p>
+        <div class="formula-source">
+          <strong>理論來由：</strong><strong>經典流體力學平板阻力模型 (Flat Plate Aerodynamic Drag)</strong> 與剛體力學平衡方程。基準參考面積採螺旋槳總盤面面積 $A_{\text{total}} = 4 \times \pi R^2 = \pi D^2$；平板正向阻力係數取 $C_D = 1.28$；空氣密度標準海平面 $\rho = 1.225\text{ kg/m}^3$；$\eta_{\text{aero}}$ 為氣動效率係數（預設 0.80）。平飛極限前傾角為 $\theta_{\text{limit}} = \arccos(1/\text{TWR})$。
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const AVIONICS_W = 15.0;  // 飛控+圖傳基準功耗
+  const WIND_FACTOR = 1.10; // 10% 抗風巡航額外功耗
+  const AIR_DENSITY = 1.225; // kg/m^3
+  const CD_FLAT_PLATE = 1.28; // 標準垂直平板阻力係數
+
+  let currentStator = '3106';
+  let currentBlades = 2;
+  let cachedTwr = 2.45;
+  let cachedAuw = 1912;
+  let cachedPropD = 12.0;
+
+  // DOM 元素快取
+  const sPropD = document.getElementById('slider-prop-d');
+  const sPropP = document.getElementById('slider-prop-p');
+  const sSeries = document.getElementById('slider-s');
+  const sParallel = document.getElementById('slider-p');
+  const sCap = document.getElementById('slider-cap');
+  const sBatW = document.getElementById('slider-bat-w');
+  const sDod = document.getElementById('slider-dod');
+  const sFrame = document.getElementById('slider-frame');
+  const sGimbal = document.getElementById('slider-gimbal');
+  const sPcbaW = document.getElementById('slider-pcba-w');
+  const sMotorW = document.getElementById('slider-motor-w');
+  const sKv = document.getElementById('slider-kv');
+
+  // 新增：Pitch 角度與效率係數 DOM
+  const sPitchDeg = document.getElementById('slider-pitch-deg');
+  const sAeroEff = document.getElementById('slider-aero-eff');
+
+  const canvas = document.getElementById('simChart');
+  const ctx = canvas.getContext('2d');
+
+  function setVal(id, val) {
+    document.getElementById(id).value = val;
+    update();
+  }
+
+  function setPitchToLimit() {
+    // 依據當前 TWR 計算極限平飛角度: acos(1/TWR)
+    const limitDeg = Math.min(65, Math.max(10, Math.round(Math.acos(1 / Math.max(1.05, cachedTwr)) * (180 / Math.PI))));
+    sPitchDeg.value = limitDeg;
+    update();
+  }
+
+  function syncP50B() {
+    const s = parseInt(sSeries.value);
+    const p = parseInt(sParallel.value);
+    const totalCells = s * p;
+    const autoCap = p * 5000;
+    const autoWeight = Math.round(totalCells * 70.5 + (totalCells * 2.8 + 20));
+    sCap.value = autoCap;
+    sBatW.value = autoWeight;
+    document.getElementById('cap-src-note').textContent = `⚡ 已同步 P50B (${p*5000}mAh / ${p}並)`;
+    document.getElementById('bat-src-note').textContent = `⚡ 已同步 ${totalCells}顆 P50B 成組包重`;
+    update();
+  }
+
+  function setSeries(s) { sSeries.value = s; syncP50B(); }
+  function setParallel(p) { sParallel.value = p; syncP50B(); }
+  function setStator(type, motorW) { currentStator = type; sMotorW.value = motorW; update(); }
+  function setBlades(num) { currentBlades = num; update(); }
+
+  function calcPropsWeight(propInch, pitchMm, blades) {
+    const base12Inch2Blade = 48;
+    const scale = Math.pow(propInch / 12.0, 2.15);
+    const pitchFactor = 1.0 + (pitchMm - 45) * 0.0025;
+    const bladeMultiplier = (blades === 3) ? 1.55 : 1.0;
+    return Math.round(base12Inch2Blade * scale * pitchFactor * bladeMultiplier);
+  }
+
+  function calcPerformance(auw, propInch, pitchMm, blades, statorType, kv, sCount, capMah, dodPct) {
+    const radiusCm = (propInch * 2.54) / 2;
+    const totalAreaCm2 = 4 * Math.PI * radiusCm * radiusCm;
+    const diskLoading = auw / totalAreaCm2;
+
+    const baseEff = 7.78 / Math.sqrt(diskLoading);
+    const bladeFactor = (blades === 3) ? 0.90 : 1.00;
+    const statorFactor = (statorType === '3106') ? 1.02 : (statorType === '2810' ? 0.95 : 1.00);
+
+    const pitchInch = pitchMm / 25.4;
+    const pdRatio = pitchInch / propInch;
+    let pdFactor = 1.0;
+    if (pdRatio < 0.22) {
+      pdFactor = Math.max(0.78, 1.0 - (0.22 - pdRatio) * 1.35);
+    } else if (pdRatio > 0.48) {
+      pdFactor = Math.max(0.85, 1.0 - (pdRatio - 0.48) * 0.9);
+    }
+
+    const nominalVoltage = sCount * 3.6;
+    const loadVoltage = sCount * 3.37;
+    const thrustPerAxis = auw / 4;
+
+    const hoverRpm = Math.round(3980 * Math.pow(12.0 / propInch, 1.45) * Math.sqrt(45 / pitchMm) * Math.sqrt(thrustPerAxis / 480) * (blades === 3 ? 0.92 : 1.0));
+    const hoverThrottlePct = Math.min(98, Math.max(8, Math.round((hoverRpm / (kv * loadVoltage)) * 100)));
+
+    let throttlePenalty = 1.0;
+    if (hoverThrottlePct < 28) {
+      throttlePenalty = 1.0 - (28 - hoverThrottlePct) * 0.01;
+    } else if (hoverThrottlePct > 68) {
+      throttlePenalty = 1.0 - (hoverThrottlePct - 68) * 0.006;
+    }
+
+    const effHover = Math.min(13.5, baseEff * bladeFactor * statorFactor * pdFactor * throttlePenalty);
+    const hoverMotorW = auw / effHover;
+    const hoverTotalW = hoverMotorW + AVIONICS_W;
+    const realTotalW = hoverTotalW * WIND_FACTOR;
+
+    const totalWh = nominalVoltage * (capMah / 1000);
+    const usableWh = totalWh * (dodPct / 100);
+    const hoverMins = (usableWh / hoverTotalW) * 60;
+    const realMins = (usableWh / realTotalW) * 60;
+
+    // 計算最大推力與推重比 (TWR)
+    // 依據懸停油門佔空比與全電門壓降係數換算
+    const tau = Math.max(0.12, hoverThrottlePct / 100);
+    const twr = Math.min(4.8, Math.max(1.1, (1.0 / Math.pow(tau, 1.05)) * 0.96));
+    const maxThrustTotalG = Math.round(auw * twr);
+    const maxThrustAxisG = Math.round(maxThrustTotalG / 4);
+
+    return { diskLoading, effHover, hoverTotalW, realTotalW, nominalVoltage, totalWh, usableWh, hoverMins, realMins, hoverRpm, hoverThrottlePct, pitchInch, twr, maxThrustTotalG, maxThrustAxisG };
+  }
+
+  // 新增：計算平板阻力模型最大飛行速度
+  function calcFlightSpeed(auwG, propInch, pitchDeg, aeroEff, twr, maxThrustG) {
+    const auwKg = auwG / 1000;
+    const g = 9.80665;
+    const thetaRad = (pitchDeg * Math.PI) / 180;
+
+    // 螺旋槳總面積 A_total = 4 * pi * R^2 = pi * D^2 (m^2)
+    const propDMetres = propInch * 0.0254;
+    const aTotal = Math.PI * propDMetres * propDMetres; // m^2
+
+    // 前向推力分量 F_x = m*g*tan(theta) [N]
+    const fxN = auwKg * g * Math.tan(thetaRad);
+    const fxG = Math.round((fxN / g) * 1000);
+
+    // 等高平飛所需總推力 T_req = AUW / cos(theta) [g]
+    const cosTheta = Math.cos(thetaRad);
+    const treqG = Math.round(auwG / cosTheta);
+    const treqPct = Math.round((treqG / maxThrustG) * 100);
+
+    // 平板阻力方程: F_x = 0.5 * rho * V^2 * A_total * C_D * eta_aero
+    // 解 V = sqrt( (2 * F_x) / (rho * A_total * C_D * eta_aero) )
+    const denom = AIR_DENSITY * aTotal * CD_FLAT_PLATE * aeroEff;
+    let vMs = 0;
+    if (denom > 0 && fxN > 0) {
+      vMs = Math.sqrt((2 * fxN) / denom);
+    }
+    const vKmh = vMs * 3.6;
+
+    // 極限平飛角與極限平飛速度
+    const limitThetaRad = Math.acos(1 / Math.max(1.01, twr));
+    const limitThetaDeg = Math.round(limitThetaRad * (180 / Math.PI));
+    const limitFxN = auwKg * g * Math.tan(limitThetaRad);
+    const limitVMs = Math.sqrt((2 * limitFxN) / denom);
+    const limitVKmh = limitVMs * 3.6;
+
+    const isLevelFlightPossible = (treqG <= maxThrustG);
+
+    return { vMs, vKmh, fxG, fxN, treqG, treqPct, limitThetaDeg, limitVKmh, isLevelFlightPossible, aTotal };
+  }
+
+  function update() {
+    const propInch = parseFloat(sPropD.value);
+    const pitchMm = parseFloat(sPropP.value);
+    const sCount = parseInt(sSeries.value);
+    const pCount = parseInt(sParallel.value);
+    const capMah = parseFloat(sCap.value);
+    const batG = parseFloat(sBatW.value);
+    const dodPct = parseFloat(sDod.value);
+
+    const frameG = parseFloat(sFrame.value);
+    const gimbalG = parseFloat(sGimbal.value);
+    const pcbaG = parseFloat(sPcbaW.value);
+
+    const singleMotorG = parseFloat(sMotorW.value);
+    const kv = parseFloat(sKv.value);
+
+    // 速度計算機參數
+    const pitchDeg = parseFloat(sPitchDeg.value);
+    const aeroEff = parseFloat(sAeroEff.value);
+
+    if (singleMotorG <= 57) currentStator = '3106';
+    else if (singleMotorG >= 72) currentStator = '2810';
+    else currentStator = '2808';
+
+    // 標籤連動
+    document.getElementById('lbl-prop-d').textContent = `${propInch.toFixed(1)} 吋 (${(propInch*25.4).toFixed(0)} mm)`;
+    document.getElementById('lbl-prop-p').textContent = `${pitchMm} mm (~${(pitchMm/25.4).toFixed(2)}")`;
+    document.getElementById('lbl-blades').textContent = `${currentBlades} 葉片 (${currentBlades === 2 ? '雙葉折疊' : '三葉槳'})`;
+    document.getElementById('lbl-s').textContent = `${sCount}S (標稱 ${(sCount*3.6).toFixed(1)}V)`;
+    document.getElementById('lbl-p').textContent = `${pCount}P (共 ${sCount*pCount} 顆電芯)`;
+    document.getElementById('lbl-cap').textContent = `${capMah.toLocaleString()} mAh`;
+    document.getElementById('lbl-bat-w').textContent = `${batG.toLocaleString()} g`;
+    document.getElementById('lbl-dod').textContent = `${dodPct}% (-10%抗風)`;
+
+    document.getElementById('lbl-frame').textContent = `${frameG} g`;
+    document.getElementById('lbl-gimbal').textContent = `${gimbalG} g`;
+    document.getElementById('lbl-pcba-w').textContent = `${pcbaG} g`;
+
+    document.getElementById('lbl-motor-w').textContent = `${singleMotorG}g (${currentStator})`;
+    document.getElementById('lbl-kv').textContent = `${kv} KV`;
+
+    // 速度標籤連動
+    document.getElementById('lbl-pitch-deg').textContent = `${pitchDeg} °`;
+    document.getElementById('lbl-aero-eff').textContent = `${aeroEff.toFixed(2)}`;
+
+    // 軸距提示更新
+    const propNotice = document.getElementById('prop-notice');
+    if (propInch <= 12.0) {
+      propNotice.textContent = `💡 ${propInch}" 適配原定 450mm 軸距機架`;
+      propNotice.style.color = 'var(--muted)';
+    } else {
+      const minWheelbase = Math.round(propInch * 25.4 * Math.SQRT2 + 90);
+      propNotice.textContent = `⚠️ ${propInch}" 螺旋槳需搭配至少 ${minWheelbase}mm 對角軸距`;
+      propNotice.style.color = 'var(--warning)';
+    }
+
+    // 按鈕雙向亮燈聯動
+    [9.0, 12.0, 15.0, 18.0].forEach(val => {
+      const btn = document.getElementById('btn-prop-d-' + Math.round(val));
+      if (btn) btn.classList.toggle('active', Math.abs(propInch - val) < 0.1);
+    });
+    [25, 45, 75].forEach(val => {
+      const btn = document.getElementById('btn-prop-p-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(pitchMm - val) < 0.5);
+    });
+    const btnBlade2 = document.getElementById('btn-blade-2');
+    const btnBlade3 = document.getElementById('btn-blade-3');
+    if (btnBlade2) btnBlade2.classList.toggle('active', currentBlades === 2);
+    if (btnBlade3) btnBlade3.classList.toggle('active', currentBlades === 3);
+
+    [6, 8, 10, 12].forEach(n => {
+      const btn = document.getElementById('btn-s-' + n);
+      if (btn) btn.classList.toggle('active', n === sCount);
+    });
+    [1, 2, 3].forEach(n => {
+      const btn = document.getElementById('btn-p-' + n);
+      if (btn) btn.classList.toggle('active', n === pCount);
+    });
+    [85, 90].forEach(val => {
+      const btn = document.getElementById('btn-dod-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(dodPct - val) < 0.5);
+    });
+    [460, 620, 950].forEach(val => {
+      const btn = document.getElementById('btn-frame-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(frameG - val) < 0.5);
+    });
+    [85, 150, 280].forEach(val => {
+      const btn = document.getElementById('btn-gimbal-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(gimbalG - val) < 0.5);
+    });
+    [95, 130, 210].forEach(val => {
+      const btn = document.getElementById('btn-pcba-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(pcbaG - val) < 0.5);
+    });
+    ['3106', '2808', '2810'].forEach(t => {
+      const btn = document.getElementById('btn-stator-' + t);
+      if (btn) btn.classList.toggle('active', t === currentStator);
+    });
+    [240, 480, 750].forEach(val => {
+      const btn = document.getElementById('btn-kv-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(kv - val) < 1.0);
+    });
+
+    // 速度計算機按鈕亮燈
+    [15, 30, 45].forEach(val => {
+      const btn = document.getElementById('btn-pitch-' + val);
+      if (btn) btn.classList.toggle('active', Math.abs(pitchDeg - val) < 0.5);
+    });
+    [0.70, 0.80, 1.00].forEach(val => {
+      const idVal = Math.round(val * 100);
+      const btn = document.getElementById('btn-eff-0' + idVal) || document.getElementById('btn-eff-' + idVal);
+      if (btn) btn.classList.toggle('active', Math.abs(aeroEff - val) < 0.02);
+    });
+
+    // 物理與配重求和
+    const motorsTotalG = singleMotorG * 4;
+    const propsTotalG = calcPropsWeight(propInch, pitchMm, currentBlades);
+    const powertrainG = motorsTotalG + propsTotalG;
+    const auw = batG + frameG + gimbalG + pcbaG + powertrainG;
+
+    cachedAuw = auw;
+    cachedPropD = propInch;
+
+    const res = calcPerformance(auw, propInch, pitchMm, currentBlades, currentStator, kv, sCount, capMah, dodPct);
+    cachedTwr = res.twr;
+
+    document.getElementById('top-badge').textContent = `動力：${propInch}"×${pitchMm}mm (${currentBlades}葉) ｜ 電池：${sCount}S${pCount}P (${res.nominalVoltage.toFixed(1)}V / ${capMah.toLocaleString()}mAh)`;
+
+    // 1. AUW 卡
+    const valAuw = document.getElementById('val-auw');
+    const subAuw = document.getElementById('sub-auw');
+    valAuw.textContent = `${auw.toLocaleString()} g`;
+    if (auw <= 2000) {
+      valAuw.style.color = 'var(--success)';
+      subAuw.textContent = `符合 ≤2kg 限制 (餘裕 ${2000 - auw}g)`;
+    } else {
+      valAuw.style.color = 'var(--danger)';
+      subAuw.textContent = `超重 ${auw - 2000}g！(突破 2kg 紅線)`;
+    }
+
+    // 2. 飛行時間卡
+    const valTime = document.getElementById('val-time');
+    valTime.textContent = `${res.realMins.toFixed(1)} min`;
+    valTime.style.color = res.realMins >= 45 ? 'var(--success)' : (res.realMins >= 40 ? 'var(--warning)' : 'var(--danger)');
+    document.getElementById('sub-time').textContent = `純靜風懸停: ${res.hoverMins.toFixed(1)} min`;
+
+    // 3. 最大推重比 (TWR) 卡
+    const valTwr = document.getElementById('val-twr');
+    valTwr.textContent = `${res.twr.toFixed(2)} : 1`;
+    valTwr.style.color = res.twr >= 1.8 ? 'var(--success)' : (res.twr >= 1.4 ? 'var(--warning)' : 'var(--danger)');
+    document.getElementById('sub-twr').textContent = `最大總推力: ${res.maxThrustTotalG.toLocaleString()}g (單軸 ${res.maxThrustAxisG.toLocaleString()}g)`;
+
+    // 4. 電池能量卡
+    document.getElementById('val-energy').textContent = `${res.totalWh.toFixed(1)} Wh`;
+    document.getElementById('sub-energy').textContent = `可用 (${dodPct}%): ${res.usableWh.toFixed(1)} Wh`;
+
+    // 5. 功耗與力效卡
+    document.getElementById('val-power').textContent = `${res.realTotalW.toFixed(0)} W`;
+    document.getElementById('sub-eff').textContent = `力效: ${res.effHover.toFixed(2)} g/W｜單軸: ${(auw/4).toFixed(0)}g`;
+
+    // 6. 轉速與油門卡
+    const valRpm = document.getElementById('val-rpm');
+    const subThr = document.getElementById('sub-thr');
+    valRpm.textContent = `${res.hoverRpm.toLocaleString()} RPM`;
+    if (res.hoverThrottlePct < 28) {
+      subThr.textContent = `懸停油門: ${res.hoverThrottlePct}% (大槳或高電壓使油門偏低，建議降KV)`;
+      subThr.style.color = 'var(--warning)';
+    } else if (res.hoverThrottlePct > 65) {
+      subThr.textContent = `懸停油門: ${res.hoverThrottlePct}% (小槳或低KV使油門過高，推力餘裕緊)`;
+      subThr.style.color = 'var(--warning)';
+    } else {
+      subThr.textContent = `懸停油門: ${res.hoverThrottlePct}% (甜蜜點區間)`;
+      subThr.style.color = 'var(--muted)';
+    }
+
+    // 更新配重條
+    document.getElementById('seg-bat').style.width = `${(batG / auw) * 100}%`;
+    document.getElementById('seg-frame').style.width = `${(frameG / auw) * 100}%`;
+    document.getElementById('seg-motor').style.width = `${(powertrainG / auw) * 100}%`;
+    document.getElementById('seg-gimbal').style.width = `${(gimbalG / auw) * 100}%`;
+    document.getElementById('seg-pcba').style.width = `${(pcbaG / auw) * 100}%`;
+
+    document.getElementById('leg-bat').textContent = `電池: ${batG}g (${((batG/auw)*100).toFixed(1)}%)`;
+    document.getElementById('leg-frame').textContent = `機架: ${frameG}g (${((frameG/auw)*100).toFixed(1)}%)`;
+    document.getElementById('leg-motor').textContent = `馬達+4支槳: ${powertrainG}g (槳佔 ${propsTotalG}g)`;
+    document.getElementById('leg-gimbal').textContent = `雲台: ${gimbalG}g (${((gimbalG/auw)*100).toFixed(1)}%)`;
+    document.getElementById('leg-pcba').textContent = `PCBA線材: ${pcbaG}g (${((pcbaG/auw)*100).toFixed(1)}%)`;
+    document.getElementById('wb-summary').textContent = `總重 ${auw.toLocaleString()} g｜盤面面積: ${(Math.PI * Math.pow(propInch*0.0254, 2)).toFixed(3)}m²｜推重比: ${res.twr.toFixed(2)}`;
+
+    // 計算並更新最大航速計算機
+    const spd = calcFlightSpeed(auw, propInch, pitchDeg, aeroEff, res.twr, res.maxThrustTotalG);
+    document.getElementById('val-speed-kmh').textContent = `${spd.vKmh.toFixed(1)} km/h`;
+    document.getElementById('sub-speed-ms').textContent = `${spd.vMs.toFixed(1)} m/s (約 ${(spd.vKmh * 0.539957).toFixed(1)} 節)`;
+
+    document.getElementById('val-thrust-fx').textContent = `${spd.fxG.toLocaleString()} g`;
+    document.getElementById('sub-thrust-fx').textContent = `${spd.fxN.toFixed(1)} N (水平克服氣阻)`;
+
+    const valTreq = document.getElementById('val-thrust-req');
+    const subTreq = document.getElementById('sub-thrust-req');
+    valTreq.textContent = `${spd.treqG.toLocaleString()} g`;
+    subTreq.textContent = `佔最大推力 ${spd.treqPct}% (上限 ${res.maxThrustTotalG.toLocaleString()}g)`;
+
+    const badge = document.getElementById('speed-status-badge');
+    if (spd.isLevelFlightPossible) {
+      badge.textContent = `✅ 可穩定維持等高平飛 (推力餘裕充足)`;
+      badge.style.color = 'var(--success)';
+      valTreq.style.color = 'var(--text)';
+    } else {
+      badge.textContent = `⚠️ 超出最大推力！此傾角將掉高（或需先爬升俯衝）`;
+      badge.style.color = 'var(--danger)';
+      valTreq.style.color = 'var(--danger)';
+    }
+
+    document.getElementById('val-speed-limit').textContent = `${spd.limitVKmh.toFixed(1)} km/h`;
+    document.getElementById('sub-speed-limit').textContent = `極限傾角: ${spd.limitThetaDeg}° (@TWR ${res.twr.toFixed(2)})`;
+
+    drawChart(auw, propInch, pitchMm, currentBlades, currentStator, kv, sCount, capMah, dodPct, res.realMins);
+  }
+
+  function drawChart(currentAuw, currentProp, pitchMm, blades, statorType, kv, sCount, capMah, dodPct, currentMins) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    const pad = { top: 22, right: 35, bottom: 38, left: 52 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const minAuw = Math.max(1000, Math.floor((currentAuw - 400) / 100) * 100);
+    const maxAuw = Math.max(minAuw + 800, Math.ceil((currentAuw + 400) / 100) * 100);
+
+    const sampleMax = calcPerformance(minAuw, Math.min(20, currentProp + 3), pitchMm, blades, statorType, kv, sCount, capMah, dodPct).realMins;
+    const sampleMin = calcPerformance(maxAuw, Math.max(8, currentProp - 3), pitchMm, blades, statorType, kv, sCount, capMah, dodPct).realMins;
+    const minTime = Math.max(15, Math.floor((Math.min(sampleMin, 30) - 4) / 5) * 5);
+    const maxTime = Math.ceil((Math.max(sampleMax, 55) + 4) / 5) * 5;
+
+    const xPos = (a) => pad.left + ((a - minAuw) / (maxAuw - minAuw)) * plotW;
+    const yPos = (t) => pad.top + plotH - ((t - minTime) / (maxTime - minTime)) * plotH;
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px sans-serif';
+
+    const tStep = (maxTime - minTime) > 40 ? 10 : 5;
+    for (let t = minTime; t <= maxTime; t += tStep) {
+      const y = yPos(t);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+      ctx.fillText(`${t}m`, 12, y + 4);
+    }
+
+    const aStep = (maxAuw - minAuw) > 1200 ? 250 : (maxAuw - minAuw > 800 ? 200 : 100);
+    for (let a = minAuw; a <= maxAuw; a += aStep) {
+      const x = xPos(a);
+      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, h - pad.bottom); ctx.stroke();
+      ctx.fillText(`${a}g`, x - 18, h - 12);
+    }
+
+    if (45 >= minTime && 45 <= maxTime) {
+      const y45 = yPos(45);
+      ctx.save();
+      ctx.strokeStyle = '#22c55e';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(pad.left, y45); ctx.lineTo(w - pad.right, y45); ctx.stroke();
+      ctx.fillStyle = '#22c55e';
+      ctx.fillText('45 min 目標線', pad.left + 8, y45 - 6);
+      ctx.restore();
+    }
+
+    if (2000 >= minAuw && 2000 <= maxAuw) {
+      const x2000 = xPos(2000);
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(x2000, pad.top); ctx.lineTo(x2000, h - pad.bottom); ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('2,000g 上限', x2000 + 6, pad.top + 14);
+      ctx.restore();
+    }
+
+    let pSmall = Math.max(8.0, currentProp - 3.0);
+    let pBig = Math.min(20.0, currentProp + 3.0);
+    if (Math.abs(pSmall - currentProp) < 0.5) pSmall = Math.max(8.0, currentProp - 2.0);
+    if (Math.abs(pBig - currentProp) < 0.5) pBig = Math.min(20.0, currentProp + 2.0);
+
+    const curves = [
+      { prop: pBig, color: '#38bdf8', label: `${pBig}" 較大槳` },
+      { prop: currentProp, color: '#a855f7', label: `${currentProp}" 當前槳` },
+      { prop: pSmall, color: '#64748b', label: `${pSmall}" 較小槳` }
+    ];
+
+    const legendEl = document.getElementById('chart-legend');
+    legendEl.innerHTML = curves.map(c => `
+      <span class="legend-item"><i class="dot" style="background:${c.color}"></i>${c.label} (${pitchMm}mm)</span>
+    `).join('') + `<span class="legend-item"><i class="dot" style="background:#22c55e"></i>45 min 目標</span>`;
+
+    curves.forEach(cfg => {
+      ctx.save();
+      ctx.strokeStyle = cfg.color;
+      const isSelected = (Math.abs(cfg.prop - currentProp) < 0.1);
+      ctx.lineWidth = isSelected ? 3.2 : 1.8;
+      ctx.beginPath();
+      for (let a = minAuw; a <= maxAuw; a += 20) {
+        const r = calcPerformance(a, cfg.prop, pitchMm, blades, statorType, kv, sCount, capMah, dodPct);
+        const x = xPos(a), y = yPos(r.realMins);
+        if (a === minAuw) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    const cx = xPos(currentAuw);
+    const cy = yPos(currentMins);
+    ctx.fillStyle = (currentAuw <= 2000 && currentMins >= 45) ? '#22c55e' : (currentAuw > 2000 ? '#ef4444' : '#f59e0b');
+    ctx.beginPath(); ctx.arc(cx, cy, 7.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.2; ctx.stroke();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 12px sans-serif';
+    const tag = `${currentProp}"×${pitchMm}mm: ${currentAuw}g / ${currentMins.toFixed(1)}m`;
+    ctx.fillText(tag, Math.min(cx + 10, w - 240), Math.max(pad.top + 16, cy - 10));
+  }
+
+  sSeries.addEventListener('input', syncP50B);
+  sParallel.addEventListener('input', syncP50B);
+
+  sCap.addEventListener('input', () => {
+    document.getElementById('cap-src-note').textContent = `✏️ 手動自訂容量模式`;
+    update();
+  });
+  sBatW.addEventListener('input', () => {
+    document.getElementById('bat-src-note').textContent = `✏️ 手動自訂包重模式`;
+    update();
+  });
+
+  [sPropD, sPropP, sDod, sFrame, sGimbal, sPcbaW, sMotorW, sKv, sPitchDeg, sAeroEff].forEach(s => s.addEventListener('input', update));
+  window.addEventListener('resize', update);
+  update();
+</script>
+</body>
+</html>
