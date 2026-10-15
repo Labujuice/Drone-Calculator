@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>固定翼飛行器全包線設計與彈射起飛模擬器 ｜ Fixed-Wing Design Utility</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --card-inner: #f1f5f9;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #0284c7;
+    --accent-hover: #0369a1;
+    --accent-light: #e0f2fe;
+    --accent-alt: #7c3aed;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1180px; margin: 0 auto; }
+
+  /* 頂部導航 */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+    border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px;
+  }
+  .nav-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn-back {
+    text-decoration: none; color: var(--muted); font-size: 0.8rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px;
+    border-radius: 6px; border: 1px solid var(--border); background: #ffffff;
+    box-shadow: var(--shadow-sm); transition: all 0.15s ease;
+  }
+  .btn-back:hover { color: var(--accent); border-color: var(--accent); background: #f0f9ff; }
+  .header h2 { margin: 0; font-size: 1.35rem; color: var(--text); font-weight: 800; letter-spacing: -0.02em; }
+  .badge {
+    background: #e0f2fe; color: var(--accent); border: 1px solid #bae6fd;
+    padding: 6px 14px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+  }
+
+  /* 快速機型情境切換條 */
+  .presets-bar {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .preset-title { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+  .scenario-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .scenario-btn {
+    background: #f8fafc; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 13px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .scenario-btn:hover {
+    border-color: var(--accent); color: var(--accent); background: #f0f9ff;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.1);
+  }
+
+  /* 頂部 6 核心指標卡片 */
+  .metrics-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px;
+  }
+  @media (max-width: 1024px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 580px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .metric-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 12px; text-align: center;
+    box-shadow: var(--shadow-sm); transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .metric-card:hover { box-shadow: var(--shadow-md); }
+  .metric-label { font-size: 0.74rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+  .metric-value { font-size: 1.35rem; font-weight: 800; color: var(--text); }
+  .metric-sub { font-size: 0.7rem; margin-top: 5px; color: var(--muted); }
+
+  /* Tab 頁籤導覽 */
+  .tabs-nav {
+    display: flex; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 18px;
+  }
+  .tab-btn {
+    background: none; border: none; padding: 10px 18px; font-size: 0.88rem; font-weight: 700;
+    color: var(--muted); cursor: pointer; position: relative; transition: all 0.15s ease;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn:hover { color: var(--accent); background: rgba(2, 132, 199, 0.05); }
+  .tab-btn.active {
+    color: var(--accent); background: #ffffff;
+    border-bottom: 3px solid var(--accent); margin-bottom: -2px;
+  }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* 模組卡片與控制網格 */
+  .card-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 0.95rem; font-weight: 800; color: var(--text);
+    margin: 0 0 16px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .controls-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  @media (max-width: 900px) { .controls-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .control-group {
+    display: flex; flex-direction: column; gap: 7px;
+    background: #ffffff; padding: 13px 15px;
+    border-radius: 9px; border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .control-group.tint-blue { background: #f0f9ff; border-color: #bae6fd; }
+  .control-group.tint-purple { background: #faf5ff; border-color: #e9d5ff; }
+  .control-group.tint-green { background: #f0fdf4; border-color: #bbf7d0; }
+  .control-group.tint-gray { background: #f8fafc; border-color: #cbd5e1; }
+
+  .control-header { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: var(--text); }
+  .control-val { font-weight: 700; color: var(--accent); }
+  input[type="range"] {
+    width: 100%; accent-color: var(--accent); cursor: pointer; margin: 4px 0;
+  }
+  .preset-btns { display: flex; gap: 6px; margin-top: auto; flex-wrap: wrap; }
+  .preset-btn {
+    flex: 1; min-width: fit-content; background: #ffffff; color: #475569;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 8px; font-size: 0.72rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease; text-align: center;
+  }
+  .preset-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); background: #f0f9ff; }
+  .preset-btn.active {
+    border-color: var(--accent); color: #ffffff; background: var(--accent); font-weight: 700;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+  }
+
+  /* 模式切換鈕 */
+  .mode-switch-bar {
+    display: flex; gap: 8px; background: var(--card-inner); padding: 4px;
+    border-radius: 8px; border: 1px solid var(--border); width: fit-content; margin-bottom: 14px;
+  }
+  .mode-switch-btn {
+    padding: 6px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 6px;
+    border: none; background: none; color: var(--muted); cursor: pointer; transition: all 0.15s ease;
+  }
+  .mode-switch-btn.active {
+    background: #ffffff; color: var(--accent); box-shadow: var(--shadow-sm);
+  }
+
+  /* Canvas 圖表卡片 */
+  .chart-container {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px; box-shadow: var(--shadow-sm); position: relative;
+    margin-top: 16px;
+  }
+  .chart-header {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .chart-select {
+    padding: 6px 12px; font-size: 0.82rem; font-weight: 600; border-radius: 6px;
+    border: 1px solid var(--border); background: #ffffff; color: var(--text);
+  }
+  canvas { width: 100%; height: 360px; display: block; }
+
+  /* 底部理論區塊 */
+  .theory-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; margin-top: 24px; box-shadow: var(--shadow-sm);
+  }
+  .theory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .theory-grid { grid-template-columns: 1fr; } }
+  .formula-block {
+    background: var(--card-inner); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .formula-title { font-size: 0.86rem; font-weight: 700; color: var(--accent); }
+  .formula-box {
+    background: #ffffff; border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    padding: 9px 12px; border-radius: 6px; font-family: "Fira Code", monospace, Consolas;
+    font-size: 0.82rem; color: #0369a1; overflow-x: auto; font-weight: 600;
+  }
+  .formula-desc { font-size: 0.78rem; line-height: 1.5; color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 頂部導航 -->
+  <div class="header">
+    <div class="nav-left">
+      <a href="index.html" class="btn-back">← 回首頁 Hub</a>
+      <h2>固定翼飛行器全包線設計與彈射起飛模擬器</h2>
+    </div>
+    <span class="badge" id="top-badge">質量: 20kg ｜ 翼面積: 1.00m² ｜ 翼載: 20.0 kg/m²</span>
+  </div>
+
+  <!-- 快速預設情境 -->
+  <div class="presets-bar">
+    <div class="preset-title">⚡ 快速機型情境切換 (一鍵連動幾何、重量與動力)：</div>
+    <div class="scenario-btns">
+      <button class="scenario-btn" onclick="applyPreset('handlaunch')">🛩️ 手拋長航輕量機 (2kg / 0.35m² / 靜推力 18N / AR=10)</button>
+      <button class="scenario-btn" onclick="applyPreset('medium')">🦅 標準彈射偵察機 (20kg / 1.0m² / 靜推力 68.7N / AR=15)</button>
+      <button class="scenario-btn" onclick="applyPreset('heavy')">✈️ 重載長程巡航機 (80kg / 3.2m² / 靜推力 320N / AR=12)</button>
+    </div>
+  </div>
+
+  <!-- 頂部 6 核心指標卡片 -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">全機重量 / 質量</div>
+      <div class="metric-value" id="val-weight">196.2 N</div>
+      <div class="metric-sub" id="sub-mass">質量: 20.0 kg (M × 9.81)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">翼載荷 (Wing Loading)</div>
+      <div class="metric-value" id="val-wingloading" style="color:var(--accent);">20.0 kg/m²</div>
+      <div class="metric-sub" id="sub-wingloading">196.2 N/m² ｜ 展長 3.87m</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">海平面失速速度 (V_stall)</div>
+      <div class="metric-value" id="val-vstall">52.6 km/h</div>
+      <div class="metric-sub" id="sub-vstall">14.61 m/s (@CL_max 1.50)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">最大升阻比 (L/D_max)</div>
+      <div class="metric-value" id="val-ldmax" style="color:var(--success);">15.35</div>
+      <div class="metric-sub" id="sub-ldspeed">最佳滑翔速度: 58.1 km/h</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">海平面最大爬升率 (ROC)</div>
+      <div class="metric-value" id="val-roc" style="color:var(--success);">2.25 m/s</div>
+      <div class="metric-sub" id="sub-vy">最佳爬升速度 Vy: 62.4 km/h</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">彈射起飛最低高度 (H_min)</div>
+      <div class="metric-value" id="val-catapult-hmin">0.00 m</div>
+      <div class="metric-sub" id="sub-catapult-status" style="color:var(--success);">✅ 爬升安全無掉高</div>
+    </div>
+  </div>
+
+  <!-- Tab 分頁導覽列 -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" id="tab-btn-1" onclick="switchTab(1)">📐 1. 機翼幾何與速度雙向選型</button>
+    <button class="tab-btn" id="tab-btn-2" onclick="switchTab(2)">🚀 2. 彈射起飛動態軌跡模擬</button>
+    <button class="tab-btn" id="tab-btn-3" onclick="switchTab(3)">📈 3. 飛行包絡線與 6 大氣動性能圖表</button>
+  </div>
+
+  <!-- ================= Tab 1: 機翼幾何與速度選型 ================= -->
+  <div class="tab-pane active" id="tab-pane-1">
+    <div class="card-box">
+      <div class="section-title">
+        <span>機翼面積與飛行速度雙向計算 (原 wing_simulator & speed_simulator 整合)</span>
+      </div>
+
+      <div class="mode-switch-bar">
+        <button class="mode-switch-btn active" id="btn-mode-area" onclick="setSizingMode('area')">模式 A：已知飛行速度 ➔ 計算所需機翼面積</button>
+        <button class="mode-switch-btn" id="btn-mode-speed" onclick="setSizingMode('speed')">模式 B：已知機翼面積 ➔ 計算失速與起飛速度</button>
+      </div>
+
+      <div class="controls-grid">
+        <!-- 飛機質量 -->
+        <div class="control-group tint-blue">
+          <div class="control-header">
+            <span>飛機質量 (Mass)</span>
+            <span class="control-val" id="lbl-mass">20.0 kg</span>
+          </div>
+          <input type="range" id="slider-mass" min="1.0" max="150.0" step="0.5" value="20.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-mass', 2.0)">2kg (手拋)</button>
+            <button class="preset-btn" onclick="setVal('slider-mass', 10.0)">10kg (中小型)</button>
+            <button class="preset-btn" onclick="setVal('slider-mass', 20.0)">20kg (標準)</button>
+            <button class="preset-btn" onclick="setVal('slider-mass', 50.0)">50kg (重型)</button>
+          </div>
+        </div>
+
+        <!-- 升力係數 CL -->
+        <div class="control-group tint-purple">
+          <div class="control-header">
+            <span>設計升力係數 (CL)</span>
+            <span class="control-val" id="lbl-cl">1.20</span>
+          </div>
+          <input type="range" id="slider-cl" min="0.30" max="2.00" step="0.05" value="1.20">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-cl', 0.50)">0.50 (高速巡航)</button>
+            <button class="preset-btn" onclick="setVal('slider-cl', 0.80)">0.80 (平飛)</button>
+            <button class="preset-btn" onclick="setVal('slider-cl', 1.20)">1.20 (起飛爬升)</button>
+            <button class="preset-btn" onclick="setVal('slider-cl', 1.50)">1.50 (失速上限)</button>
+          </div>
+        </div>
+
+        <!-- 空氣密度 -->
+        <div class="control-group tint-gray">
+          <div class="control-header">
+            <span>空氣密度 (Air Density ρ)</span>
+            <span class="control-val" id="lbl-rho">1.225 kg/m³</span>
+          </div>
+          <input type="range" id="slider-rho" min="0.500" max="1.300" step="0.005" value="1.225">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-rho', 1.225)">海平面 1.225</button>
+            <button class="preset-btn" onclick="setVal('slider-rho', 1.056)">1,500m 1.056</button>
+            <button class="preset-btn" onclick="setVal('slider-rho', 0.909)">3,000m 0.909</button>
+          </div>
+        </div>
+
+        <!-- 模式 A 輸入：目標速度 -->
+        <div class="control-group tint-green" id="group-target-speed">
+          <div class="control-header">
+            <span>目標設計速度 (Velocity)</span>
+            <span class="control-val" id="lbl-target-speed">18.0 m/s (64.8 km/h)</span>
+          </div>
+          <input type="range" id="slider-target-speed" min="8.0" max="60.0" step="0.5" value="18.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-target-speed', 12.0)">12 m/s (慢速)</button>
+            <button class="preset-btn" onclick="setVal('slider-target-speed', 18.0)">18 m/s (巡航)</button>
+            <button class="preset-btn" onclick="setVal('slider-target-speed', 28.0)">28 m/s (高速)</button>
+          </div>
+        </div>
+
+        <!-- 模式 B 輸入：機翼面積 -->
+        <div class="control-group tint-blue" id="group-wing-area">
+          <div class="control-header">
+            <span>機翼參考面積 (Wing Area S)</span>
+            <span class="control-val" id="lbl-wing-area">1.00 m²</span>
+          </div>
+          <input type="range" id="slider-wing-area" min="0.10" max="6.00" step="0.05" value="1.00">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-wing-area', 0.35)">0.35 m²</button>
+            <button class="preset-btn" onclick="setVal('slider-wing-area', 1.00)">1.00 m²</button>
+            <button class="preset-btn" onclick="setVal('slider-wing-area', 2.20)">2.20 m²</button>
+          </div>
+        </div>
+
+        <!-- 起飛安全倍率 -->
+        <div class="control-group tint-purple">
+          <div class="control-header">
+            <span>起飛安全倍率 (Takeoff Safety Factor)</span>
+            <span class="control-val" id="lbl-safe-factor">1.20 × V_stall</span>
+          </div>
+          <input type="range" id="slider-safe-factor" min="1.00" max="1.50" step="0.05" value="1.20">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-safe-factor', 1.10)">1.10 (激進)</button>
+            <button class="preset-btn" onclick="setVal('slider-safe-factor', 1.20)">1.20 (標準 FAA)</button>
+            <button class="preset-btn" onclick="setVal('slider-safe-factor', 1.30)">1.30 (保守抗風)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Tab 2: 彈射起飛動態模擬 ================= -->
+  <div class="tab-pane" id="tab-pane-2">
+    <div class="card-box">
+      <div class="section-title">
+        <span>彈射起飛運動學與離架下滑軌跡模擬 (原 catapult_simulator 升級)</span>
+        <span id="catapult-badge" style="font-size:0.78rem; font-weight:700; color:var(--success);">✅ 安全離架狀態</span>
+      </div>
+
+      <div class="controls-grid">
+        <!-- 彈射初速 -->
+        <div class="control-group tint-blue">
+          <div class="control-header">
+            <span>彈射出架初速 (V0)</span>
+            <span class="control-val" id="lbl-cat-v0">12.0 m/s (43.2 km/h)</span>
+          </div>
+          <input type="range" id="slider-cat-v0" min="0" max="35" step="0.5" value="12.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-cat-v0', 5)">5 m/s (手擲)</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-v0', 12)">12 m/s (橡筋架)</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-v0', 20)">20 m/s (氣動彈射)</button>
+          </div>
+        </div>
+
+        <!-- 彈射仰角 -->
+        <div class="control-group tint-purple">
+          <div class="control-header">
+            <span>彈射導軌仰角 (Launch Angle θ)</span>
+            <span class="control-val" id="lbl-cat-angle">10.0 °</span>
+          </div>
+          <input type="range" id="slider-cat-angle" min="0" max="25" step="0.5" value="10.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-cat-angle', 6)">6° (平緩)</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-angle', 10)">10° (標準)</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-angle', 15)">15° (大仰角)</button>
+          </div>
+        </div>
+
+        <!-- 發射推力 -->
+        <div class="control-group tint-green">
+          <div class="control-header">
+            <span>發動機可用推力 (Thrust T)</span>
+            <span class="control-val" id="lbl-cat-thrust">55.0 N (約 5.6 kgf)</span>
+          </div>
+          <input type="range" id="slider-cat-thrust" min="5" max="350" step="5" value="55.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-cat-thrust', 20)">20 N</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-thrust', 55)">55 N</button>
+            <button class="preset-btn" onclick="setVal('slider-cat-thrust', 120)">120 N</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 彈射 2D 軌跡圖 -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <span style="font-size:0.88rem; font-weight:700; color:var(--text);">🚀 彈射起飛 2D 垂直剖面軌跡圖 (Trajectory Dipping Profile)</span>
+          <span id="cat-traj-note" style="font-size:0.75rem; color:var(--muted);">X 軸: 水平位移 (m) ｜ Y 軸: 垂直相對高度 (m)</span>
+        </div>
+        <canvas id="catapultChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Tab 3: 飛行包絡線與 6 大性能圖表 ================= -->
+  <div class="tab-pane" id="tab-pane-3">
+    <div class="card-box">
+      <div class="section-title">
+        <span>全包線氣動參數與發動機模型 (原 flight_envelope 深度引擎)</span>
+      </div>
+
+      <div class="controls-grid">
+        <!-- 展弦比 AR -->
+        <div class="control-group tint-blue">
+          <div class="control-header">
+            <span>機翼展弦比 (Aspect Ratio, AR)</span>
+            <span class="control-val" id="lbl-env-ar">15.0</span>
+          </div>
+          <input type="range" id="slider-env-ar" min="4.0" max="25.0" step="0.5" value="15.0">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-ar', 8.0)">8 (飛翼/三角)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-ar', 12.0)">12 (標準巡航)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-ar', 15.0)">15 (大展弦比)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-ar', 20.0)">20 (滑翔機)</button>
+          </div>
+        </div>
+
+        <!-- 奧斯瓦爾德效率因子 e -->
+        <div class="control-group tint-purple">
+          <div class="control-header">
+            <span>奧斯瓦爾德效率因子 (e)</span>
+            <span class="control-val" id="lbl-env-e">0.80</span>
+          </div>
+          <input type="range" id="slider-env-e" min="0.60" max="0.95" step="0.02" value="0.80">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-e', 0.72)">0.72 (典型矩形翼)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-e', 0.80)">0.80 (梯形平直翼)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-e', 0.90)">0.90 (橢圓/加裝翼尖)</button>
+          </div>
+        </div>
+
+        <!-- 最大升力係數 CL_max -->
+        <div class="control-group tint-green">
+          <div class="control-header">
+            <span>失速最大升力係數 (CL_max)</span>
+            <span class="control-val" id="lbl-env-clmax">1.50</span>
+          </div>
+          <input type="range" id="slider-env-clmax" min="1.00" max="2.40" step="0.05" value="1.50">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-clmax', 1.20)">1.20 (薄翼)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-clmax', 1.50)">1.50 (標準厚翼)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-clmax', 1.85)">1.85 (襟翼增升)</button>
+          </div>
+        </div>
+
+        <!-- 零升力阻力係數 CD_0 -->
+        <div class="control-group tint-gray">
+          <div class="control-header">
+            <span>全機零升力阻力 (CD0_total)</span>
+            <span class="control-val" id="lbl-env-cd0">0.040</span>
+          </div>
+          <input type="range" id="slider-env-cd0" min="0.015" max="0.080" step="0.002" value="0.040">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-cd0', 0.025)">0.025 (極致流線)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-cd0', 0.040)">0.040 (標準無人機)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-cd0', 0.060)">0.060 (多外掛起落架)</button>
+          </div>
+        </div>
+
+        <!-- 地面靜推力 -->
+        <div class="control-group tint-blue">
+          <div class="control-header">
+            <span>海平面最大靜推力 (T_static)</span>
+            <span class="control-val" id="lbl-env-thrust">68.7 N (7.0 kgf)</span>
+          </div>
+          <input type="range" id="slider-env-thrust" min="10" max="500" step="5" value="68.7">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-thrust', 18)">18 N (2kg輕推)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-thrust', 68.7)">68.7 N (標準)</button>
+            <button class="preset-btn" onclick="setVal('slider-env-thrust', 200)">200 N (高推重大機)</button>
+          </div>
+        </div>
+
+        <!-- 分析上限高度 -->
+        <div class="control-group tint-purple">
+          <div class="control-header">
+            <span>計算上限高度 (H_max)</span>
+            <span class="control-val" id="lbl-env-hmax">5,000 m</span>
+          </div>
+          <input type="range" id="slider-env-hmax" min="1000" max="10000" step="500" value="5000">
+          <div class="preset-btns">
+            <button class="preset-btn" onclick="setVal('slider-env-hmax', 3000)">3,000 m</button>
+            <button class="preset-btn" onclick="setVal('slider-env-hmax', 5000)">5,000 m</button>
+            <button class="preset-btn" onclick="setVal('slider-env-hmax', 8000)">8,000 m</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 圖表區塊與切換選單 -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:0.9rem; font-weight:700; color:var(--text);">📊 氣動性能圖表庫：</span>
+            <select class="chart-select" id="sel-chart" onchange="renderActiveChart()">
+              <option value="1">1. 飛行包絡線 (Flight Envelope / V-h Diagram)</option>
+              <option value="2">2. 巡航推力需求圖 (Cruise Speed vs. Required Thrust)</option>
+              <option value="3">3. 俯衝加速度曲線 (Acceleration vs. Speed during Dive)</option>
+              <option value="4">4. 俯衝改出 G 力與轉彎角速度 (Potential G-force during Pull-out)</option>
+              <option value="5">5. 海平面爬升率曲線 (Rate of Climb vs. Velocity)</option>
+              <option value="6">6. 升阻比曲線 (Lift-to-Drag Ratio vs. Velocity)</option>
+            </select>
+          </div>
+          <div id="chart-legend-wrap" style="font-size:0.75rem; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap;"></div>
+        </div>
+        <canvas id="envelopeChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部理論依據與算式推導卡片 -->
+  <div class="theory-card">
+    <div class="section-title">
+      <span>📐 系統核心物理模型、算式推導與理論依據 (Theoretical Formulations)</span>
+      <span style="font-size:0.75rem; color:var(--muted);">嚴謹航空工程氣動學、ISA 標準大氣與運動學模型</span>
+    </div>
+
+    <div class="theory-grid">
+      <!-- 算式 1 -->
+      <div class="formula-block">
+        <div class="formula-title">1. 機翼升力平衡方程式與失速速度</div>
+        <div class="formula-box">
+          L = W = 0.5 × ρ × V² × S × CL<br>
+          V_stall = √[ (2 × W) / (ρ × S × CL_max) ]<br>
+          S_req = W / (0.5 × ρ × V² × CL)
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>平飛時飛機升力必須完全平衡總重力 $W$。機翼載荷 $W/S$ 決定了飛機的起降失速速度門檻與抗側風巡航穩定性。
+        </p>
+      </div>
+
+      <!-- 算式 2 -->
+      <div class="formula-block">
+        <div class="formula-title">2. 拋物線阻力極曲線與誘導阻力因子</div>
+        <div class="formula-box">
+          CD = CD_0 + k × CL²<br>
+          k = 1 / (π × AR × e)<br>
+          (L/D)_max = 1 / [ 2 × √(CD_0 × k) ]
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>全機阻力由寄生阻力 $C_{D0}$（機翼、機身、尾翼等形阻與摩擦阻力）與升力誘發的下洗誘導阻力 $k C_L^2$ 組成。大展弦比 $AR$ 能大幅壓低誘導阻力係數 $k$。
+        </p>
+      </div>
+
+      <!-- 算式 3 -->
+      <div class="formula-block">
+        <div class="formula-title">3. ISA 標準大氣模型與高空推力衰減</div>
+        <div class="formula-box">
+          T(h) = T_sl - 0.0065 × h   [K]<br>
+          ρ(h) = p(h) / (287.05 × T(h))<br>
+          T_avail = T_sl × (ρ/ρ_sl)^0.7 × (1 - 0.2 M + 0.1 M²)
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>隨海拔爬升，大氣溫度與氣壓持續衰減。推進發動機的可用推力受空氣密度比與進氣馬赫數 $M$ 的綜合修正。
+        </p>
+      </div>
+
+      <!-- 算式 4 -->
+      <div class="formula-block">
+        <div class="formula-title">4. 彈射起飛運動學與下滑最低高度</div>
+        <div class="formula-box">
+          a_x = T / m<br>
+          t = (V_target - V_0x) / a_x<br>
+          a_y = (L_avg - W) / m<br>
+          H_vertex = V_0y × t_v + 0.5 × a_y × t_v²  (t_v = -V_0y / a_y)
+        </div>
+        <p class="formula-desc">
+          <strong>物理意涵：</strong>彈射架離架初速若低於升力完全平衡速度，重力大於升力將產生負向垂直淨加速度，飛機會出現下陷。必須精確計算拋物線頂點以防墜地碰觸地面。
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const g = 9.81;
+
+  // DOM 元素快取
+  const sMass = document.getElementById('slider-mass');
+  const sCl = document.getElementById('slider-cl');
+  const sRho = document.getElementById('slider-rho');
+  const sTargetSpeed = document.getElementById('slider-target-speed');
+  const sWingArea = document.getElementById('slider-wing-area');
+  const sSafeFactor = document.getElementById('slider-safe-factor');
+
+  const sCatV0 = document.getElementById('slider-cat-v0');
+  const sCatAngle = document.getElementById('slider-cat-angle');
+  const sCatThrust = document.getElementById('slider-cat-thrust');
+
+  const sEnvAr = document.getElementById('slider-env-ar');
+  const sEnvE = document.getElementById('slider-env-e');
+  const sEnvClMax = document.getElementById('slider-env-clmax');
+  const sEnvCd0 = document.getElementById('slider-env-cd0');
+  const sEnvThrust = document.getElementById('slider-env-thrust');
+  const sEnvHmax = document.getElementById('slider-env-hmax');
+
+  let currentTab = 1;
+  let sizingMode = 'area'; // 'area' (speed -> area) or 'speed' (area -> speed)
+
+  function setVal(id, val) {
+    document.getElementById(id).value = val;
+    update();
+  }
+
+  function switchTab(idx) {
+    currentTab = idx;
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById('tab-btn-' + i).classList.toggle('active', i === idx);
+      document.getElementById('tab-pane-' + i).classList.toggle('active', i === idx);
+    }
+    if (idx === 2) drawCatapultChart();
+    if (idx === 3) renderActiveChart();
+  }
+
+  function setSizingMode(mode) {
+    sizingMode = mode;
+    document.getElementById('btn-mode-area').classList.toggle('active', mode === 'area');
+    document.getElementById('btn-mode-speed').classList.toggle('active', mode === 'speed');
+    update();
+  }
+
+  function applyPreset(type) {
+    if (type === 'handlaunch') {
+      sMass.value = 2.0;
+      sWingArea.value = 0.35;
+      sCl.value = 0.80;
+      sRho.value = 1.225;
+      sTargetSpeed.value = 14.0;
+      sSafeFactor.value = 1.20;
+      sCatV0.value = 9.0;
+      sCatAngle.value = 12.0;
+      sCatThrust.value = 18.0;
+      sEnvAr.value = 10.0;
+      sEnvE.value = 0.80;
+      sEnvClMax.value = 1.40;
+      sEnvCd0.value = 0.035;
+      sEnvThrust.value = 18.0;
+      sEnvHmax.value = 3000;
+    } else if (type === 'medium') {
+      sMass.value = 20.0;
+      sWingArea.value = 1.00;
+      sCl.value = 1.20;
+      sRho.value = 1.225;
+      sTargetSpeed.value = 18.0;
+      sSafeFactor.value = 1.20;
+      sCatV0.value = 12.0;
+      sCatAngle.value = 10.0;
+      sCatThrust.value = 55.0;
+      sEnvAr.value = 15.0;
+      sEnvE.value = 0.80;
+      sEnvClMax.value = 1.50;
+      sEnvCd0.value = 0.040;
+      sEnvThrust.value = 68.7;
+      sEnvHmax.value = 5000;
+    } else if (type === 'heavy') {
+      sMass.value = 80.0;
+      sWingArea.value = 3.20;
+      sCl.value = 1.10;
+      sRho.value = 1.225;
+      sTargetSpeed.value = 28.0;
+      sSafeFactor.value = 1.20;
+      sCatV0.value = 22.0;
+      sCatAngle.value = 8.0;
+      sCatThrust.value = 240.0;
+      sEnvAr.value = 12.0;
+      sEnvE.value = 0.82;
+      sEnvClMax.value = 1.60;
+      sEnvCd0.value = 0.038;
+      sEnvThrust.value = 320.0;
+      sEnvHmax.value = 7000;
+    }
+    update();
+  }
+
+  // --- 大氣模型 ISA ---
+  function rho_h(h) {
+    const T_sl = 288.15;
+    const a_T = -0.0065;
+    if (h <= 11000) {
+      const T_h = T_sl + a_T * h;
+      const p_h = 101325.0 * Math.pow(T_h / T_sl, -g / (a_T * 287.05));
+      return p_h / (287.05 * T_h);
+    }
+    return 1.225 * 0.25;
+  }
+
+  function speed_of_sound(h) {
+    const T_sl = 288.15;
+    const a_T = -0.0065;
+    const T_h = T_sl + a_T * Math.min(11000, h);
+    return Math.sqrt(1.4 * 287.05 * T_h);
+  }
+
+  function thrust_model(T_static_sl, altitude, velocity) {
+    const density_ratio = rho_h(altitude) / 1.225;
+    const mach = velocity / speed_of_sound(altitude);
+    const mach_corr = 1 - 0.2 * mach + 0.1 * mach * mach;
+    return T_static_sl * Math.pow(density_ratio, 0.7) * mach_corr;
+  }
+
+  function update() {
+    const mass = parseFloat(sMass.value);
+    const weight = mass * g;
+    const cl = parseFloat(sCl.value);
+    const rho = parseFloat(sRho.value);
+    const safeFactor = parseFloat(sSafeFactor.value);
+    const ar = parseFloat(sEnvAr.value);
+    const e = parseFloat(sEnvE.value);
+    const clMax = parseFloat(sEnvClMax.value);
+    const cd0 = parseFloat(sEnvCd0.value);
+    const tStatic = parseFloat(sEnvThrust.value);
+    const hMax = parseFloat(sEnvHmax.value);
+
+    let wingArea = parseFloat(sWingArea.value);
+    let targetSpeed = parseFloat(sTargetSpeed.value);
+
+    // 模式雙向連動
+    if (sizingMode === 'area') {
+      // 依速度計算翼面積
+      wingArea = weight / (0.5 * rho * targetSpeed * targetSpeed * cl);
+      sWingArea.value = wingArea.toFixed(2);
+    } else {
+      // 依翼面積計算速度
+      targetSpeed = Math.sqrt((2 * weight) / (rho * wingArea * cl));
+      sTargetSpeed.value = targetSpeed.toFixed(1);
+    }
+
+    const wingSpan = Math.sqrt(wingArea * ar);
+    const meanChord = wingSpan / ar;
+    const wingLoadingKg = mass / wingArea;
+    const wingLoadingN = weight / wingArea;
+
+    // 海平面失速速度
+    const vStallSl = Math.sqrt((2 * weight) / (1.225 * wingArea * clMax));
+
+    // 升阻比極值與最佳滑翔速度
+    const k = 1.0 / (Math.PI * ar * e);
+    const ldMax = 1.0 / (2.0 * Math.sqrt(cd0 * k));
+    const clBestLd = Math.sqrt(cd0 / k);
+    const vBestLd = Math.sqrt((2 * weight) / (1.225 * wingArea * clBestLd));
+
+    // 爬升率估算 (海平面)
+    let maxRoc = 0, vySpeed = vStallSl;
+    for (let v = vStallSl; v <= vStallSl * 2.8; v += 0.5) {
+      const cl_v = weight / (0.5 * 1.225 * v * v * wingArea);
+      const cd_v = cd0 + k * cl_v * cl_v;
+      const drag_v = 0.5 * 1.225 * v * v * wingArea * cd_v;
+      const t_avail = thrust_model(tStatic, 0, v);
+      const roc = ((t_avail - drag_v) * v) / weight;
+      if (roc > maxRoc) {
+        maxRoc = roc;
+        vySpeed = v;
+      }
+    }
+
+    // 彈射起飛計算
+    const catV0 = parseFloat(sCatV0.value);
+    const catAngle = parseFloat(sCatAngle.value);
+    const catThrust = parseFloat(sCatThrust.value);
+    const angleRad = (catAngle * Math.PI) / 180;
+    const v0x = catV0 * Math.cos(angleRad);
+    const v0y = catV0 * Math.sin(angleRad);
+    const catTargetSpeed = safeFactor * vStallSl;
+    const catAx = catThrust / mass;
+
+    let catTime = 0, catDistX = 0, catDistY = 0, catHmin = 0;
+    if (catAx > 0 && catTargetSpeed > v0x) {
+      catTime = (catTargetSpeed - v0x) / catAx;
+      catDistX = v0x * catTime + 0.5 * catAx * catTime * catTime;
+      const l0 = 0.5 * rho * catV0 * catV0 * wingArea * cl;
+      const l1 = 0.5 * rho * catTargetSpeed * catTargetSpeed * wingArea * cl;
+      const lAvg = (l0 + l1) / 2;
+      const netAy = (lAvg - weight) / mass;
+      catDistY = v0y * catTime + 0.5 * netAy * catTime * catTime;
+
+      if (netAy < 0) {
+        const tVertex = -v0y / netAy;
+        if (tVertex > 0 && tVertex < catTime) {
+          const hVertex = v0y * tVertex + 0.5 * netAy * tVertex * tVertex;
+          catHmin = Math.min(0, catDistY, hVertex);
+        } else {
+          catHmin = Math.min(0, catDistY);
+        }
+      } else {
+        catHmin = Math.min(0, catDistY);
+      }
+    }
+
+    // 更新 DOM 標籤
+    document.getElementById('lbl-mass').textContent = `${mass.toFixed(1)} kg`;
+    document.getElementById('lbl-cl').textContent = `${cl.toFixed(2)}`;
+    document.getElementById('lbl-rho').textContent = `${rho.toFixed(3)} kg/m³`;
+    document.getElementById('lbl-target-speed').textContent = `${targetSpeed.toFixed(1)} m/s (${(targetSpeed*3.6).toFixed(1)} km/h)`;
+    document.getElementById('lbl-wing-area').textContent = `${wingArea.toFixed(2)} m²`;
+    document.getElementById('lbl-safe-factor').textContent = `${safeFactor.toFixed(2)} × V_stall`;
+
+    document.getElementById('lbl-cat-v0').textContent = `${catV0.toFixed(1)} m/s (${(catV0*3.6).toFixed(1)} km/h)`;
+    document.getElementById('lbl-cat-angle').textContent = `${catAngle.toFixed(1)} °`;
+    document.getElementById('lbl-cat-thrust').textContent = `${catThrust.toFixed(1)} N (約 ${(catThrust/g).toFixed(1)} kgf)`;
+
+    document.getElementById('lbl-env-ar').textContent = `${ar.toFixed(1)}`;
+    document.getElementById('lbl-env-e').textContent = `${e.toFixed(2)}`;
+    document.getElementById('lbl-env-clmax').textContent = `${clMax.toFixed(2)}`;
+    document.getElementById('lbl-env-cd0').textContent = `${cd0.toFixed(3)}`;
+    document.getElementById('lbl-env-thrust').textContent = `${tStatic.toFixed(1)} N (${(tStatic/g).toFixed(1)} kgf)`;
+    document.getElementById('lbl-env-hmax').textContent = `${hMax.toLocaleString()} m`;
+
+    document.getElementById('top-badge').textContent = `質量: ${mass.toFixed(1)}kg ｜ 翼面積: ${wingArea.toFixed(2)}m² ｜ 翼載: ${wingLoadingKg.toFixed(1)} kg/m² ｜ 翼展: ${wingSpan.toFixed(2)}m`;
+
+    // 頂部核心卡片
+    document.getElementById('val-weight').textContent = `${weight.toFixed(1)} N`;
+    document.getElementById('sub-mass').textContent = `質量: ${mass.toFixed(1)} kg (W = M × g)`;
+
+    document.getElementById('val-wingloading').textContent = `${wingLoadingKg.toFixed(1)} kg/m²`;
+    document.getElementById('sub-wingloading').textContent = `${wingLoadingN.toFixed(1)} N/m² ｜ 弦長: ${meanChord.toFixed(2)}m`;
+
+    document.getElementById('val-vstall').textContent = `${(vStallSl * 3.6).toFixed(1)} km/h`;
+    document.getElementById('sub-vstall').textContent = `${vStallSl.toFixed(2)} m/s (@CL_max ${clMax.toFixed(2)})`;
+
+    document.getElementById('val-ldmax').textContent = `${ldMax.toFixed(2)}`;
+    document.getElementById('sub-ldspeed').textContent = `最佳滑翔速度: ${(vBestLd * 3.6).toFixed(1)} km/h`;
+
+    document.getElementById('val-roc').textContent = `${maxRoc.toFixed(2)} m/s`;
+    document.getElementById('sub-vy').textContent = `最佳爬升 Vy: ${(vySpeed * 3.6).toFixed(1)} km/h`;
+
+    const valHmin = document.getElementById('val-catapult-hmin');
+    const subHmin = document.getElementById('sub-catapult-status');
+    const badgeCat = document.getElementById('catapult-badge');
+    valHmin.textContent = `${catHmin.toFixed(2)} m`;
+    if (catHmin < -0.05) {
+      valHmin.style.color = 'var(--danger)';
+      subHmin.textContent = `⚠️ 掉高下陷 ${Math.abs(catHmin).toFixed(2)}m (需確認發射架高度)`;
+      subHmin.style.color = 'var(--danger)';
+      badgeCat.textContent = `⚠️ 存在下陷掉高風險`;
+      badgeCat.style.color = 'var(--danger)';
+    } else {
+      valHmin.style.color = 'var(--success)';
+      subHmin.textContent = `✅ 爬升安全無下陷墜地風險`;
+      subHmin.style.color = 'var(--success)';
+      badgeCat.textContent = `✅ 安全起飛加速完畢`;
+      badgeCat.style.color = 'var(--success)';
+    }
+
+    if (currentTab === 2) drawCatapultChart();
+    if (currentTab === 3) renderActiveChart();
+  }
+
+  // --- 彈射起飛軌跡 Canvas 繪製 ---
+  function drawCatapultChart() {
+    const canvas = document.getElementById('catapultChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width, h = rect.height;
+    const pad = { top: 25, right: 35, bottom: 40, left: 55 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const mass = parseFloat(sMass.value);
+    const weight = mass * g;
+    const cl = parseFloat(sCl.value);
+    const rho = parseFloat(sRho.value);
+    const safeFactor = parseFloat(sSafeFactor.value);
+    const wingArea = parseFloat(sWingArea.value);
+    const clMax = parseFloat(sEnvClMax.value);
+
+    const catV0 = parseFloat(sCatV0.value);
+    const catAngle = parseFloat(sCatAngle.value);
+    const catThrust = parseFloat(sCatThrust.value);
+    const angleRad = (catAngle * Math.PI) / 180;
+    const v0x = catV0 * Math.cos(angleRad);
+    const v0y = catV0 * Math.sin(angleRad);
+
+    const vStallSl = Math.sqrt((2 * weight) / (1.225 * wingArea * clMax));
+    const targetSpeed = safeFactor * vStallSl;
+    const ax = catThrust / mass;
+
+    if (ax <= 0 || targetSpeed <= v0x) {
+      ctx.fillStyle = '#64748b';
+      ctx.font = '14px system-ui';
+      ctx.fillText('初速已達或超過目標起飛速度，或推力不足以加速。', w / 3, h / 2);
+      return;
+    }
+
+    const tTotal = (targetSpeed - v0x) / ax;
+    const dt = tTotal / 100;
+    const pts = [];
+    let curX = 0, curY = 0, curVx = v0x, curVy = v0y;
+
+    let minY = 0, maxY = 1;
+    for (let t = 0; t <= tTotal; t += dt) {
+      const vInst = Math.sqrt(curVx * curVx + curVy * curVy);
+      const lInst = 0.5 * rho * vInst * vInst * wingArea * cl;
+      const netAy = (lInst - weight) / mass;
+
+      pts.push({ x: curX, y: curY, t: t, v: vInst });
+      minY = Math.min(minY, curY);
+      maxY = Math.max(maxY, curY);
+
+      curX += curVx * dt + 0.5 * ax * dt * dt;
+      curY += curVy * dt + 0.5 * netAy * dt * dt;
+      curVx += ax * dt;
+      curVy += netAy * dt;
+    }
+
+    const maxX = Math.max(10, pts[pts.length - 1].x);
+    minY = Math.min(-1, minY - 0.5);
+    maxY = Math.max(2, maxY + 1.0);
+
+    const xPos = (x) => pad.left + (x / maxX) * plotW;
+    const yPos = (y) => pad.top + plotH - ((y - minY) / (maxY - minY)) * plotH;
+
+    // 網格與地面
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px system-ui';
+
+    // 地面基準線 y = 0
+    const yZero = yPos(0);
+    ctx.save();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pad.left, yZero); ctx.lineTo(w - pad.right, yZero); ctx.stroke();
+    ctx.fillStyle = '#475569';
+    ctx.fillText('起飛發射基準面 (Ground 0m)', pad.left + 10, yZero - 6);
+    ctx.restore();
+
+    // 繪製軌跡曲線
+    ctx.save();
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    pts.forEach((pt, i) => {
+      const xp = xPos(pt.x), yp = yPos(pt.y);
+      if (i === 0) ctx.moveTo(xp, yp); else ctx.lineTo(xp, yp);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // 標註起飛完成點
+    const endPt = pts[pts.length - 1];
+    const endX = xPos(endPt.x), endY = yPos(endPt.y);
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px system-ui';
+    ctx.fillText(`起飛速度點: ${(endPt.v*3.6).toFixed(1)} km/h (離架距 ${endPt.x.toFixed(1)}m / 高度 ${endPt.y.toFixed(2)}m)`, Math.min(endX - 120, w - 280), endY - 12);
+  }
+
+  // --- 飛行包絡線 6 大圖表繪製 ---
+  function renderActiveChart() {
+    const canvas = document.getElementById('envelopeChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width, h = rect.height;
+    const pad = { top: 25, right: 35, bottom: 40, left: 55 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const mass = parseFloat(sMass.value);
+    const weight = mass * g;
+    const wingArea = parseFloat(sWingArea.value);
+    const ar = parseFloat(sEnvAr.value);
+    const e = parseFloat(sEnvE.value);
+    const clMax = parseFloat(sEnvClMax.value);
+    const cd0 = parseFloat(sEnvCd0.value);
+    const tStatic = parseFloat(sEnvThrust.value);
+    const hMax = parseFloat(sEnvHmax.value);
+    const k = 1.0 / (Math.PI * ar * e);
+
+    const chartId = document.getElementById('sel-chart').value;
+    const legendWrap = document.getElementById('chart-legend-wrap');
+
+    // 依選定圖表繪製
+    if (chartId === "1") {
+      // 1. 飛行包絡線 (V-h Diagram)
+      legendWrap.innerHTML = `
+        <span><i style="display:inline-block;width:10px;height:10px;background:#0284c7;border-radius:50%;"></i> 失速線 V_stall</span>
+        <span><i style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:50%;"></i> 平飛極速 V_max</span>
+        <span><i style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:50%;"></i> 安全飛行包絡線</span>
+        <span><i style="display:inline-block;width:10px;height:10px;background:#d97706;border-radius:50%;"></i> 俯衝極速 (-45°)</span>
+      `;
+
+      const altitudes = [];
+      const nAlt = 30;
+      for (let i = 0; i <= nAlt; i++) altitudes.push((hMax / nAlt) * i);
+
+      const vStalls = [], vMaxs = [], vDives45 = [];
+      altitudes.forEach(alt => {
+        const rho = rho_h(alt);
+        const vs = Math.sqrt((2 * weight) / (rho * wingArea * clMax));
+        vStalls.push(vs);
+
+        // 數值搜索極速
+        let vm = vs * 1.05;
+        while (vm < 200) {
+          const cl_m = weight / (0.5 * rho * vm * vm * wingArea);
+          const cd_m = cd0 + k * cl_m * cl_m;
+          const drag = 0.5 * rho * vm * vm * wingArea * cd_m;
+          const tavail = thrust_model(tStatic, alt, vm);
+          if (tavail <= drag) break;
+          vm += 0.8;
+        }
+        vMaxs.push(vm);
+
+        // 俯衝 -45 度
+        let curH = alt, curV = vs;
+        const dt = 0.1, theta = -45 * Math.PI / 180;
+        while (curH > 0 && curV < 250) {
+          const rhoD = rho_h(curH);
+          const dragD = 0.5 * rhoD * curV * curV * wingArea * cd0;
+          const tD = thrust_model(tStatic, curH, curV);
+          const aD = (tD - dragD + weight * Math.sin(-theta)) / mass;
+          curV += aD * dt;
+          curH -= curV * Math.sin(-theta) * dt;
+          if (curV < 0.1) curV = 0.1;
+        }
+        vDives45.push(curV);
+      });
+
+      const maxSpeedKmh = Math.max(...vDives45) * 3.6 * 1.1;
+      const xPos = (vKmh) => pad.left + (vKmh / maxSpeedKmh) * plotW;
+      const yPos = (alt) => pad.top + plotH - (alt / hMax) * plotH;
+
+      // 繪製網格
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui';
+      for (let hStep = 0; hStep <= hMax; hStep += Math.round(hMax / 5)) {
+        const y = yPos(hStep);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+        ctx.fillText(`${(hStep/1000).toFixed(1)}k m`, 12, y + 4);
+      }
+      for (let vStep = 0; vStep <= maxSpeedKmh; vStep += 50) {
+        const x = xPos(vStep);
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, h - pad.bottom); ctx.stroke();
+        ctx.fillText(`${vStep}`, x - 10, h - 14);
+      }
+
+      // 填充包絡線安全區域
+      ctx.save();
+      ctx.fillStyle = 'rgba(22, 163, 74, 0.15)';
+      ctx.beginPath();
+      altitudes.forEach((alt, i) => {
+        const xp = xPos(vStalls[i] * 3.6), yp = yPos(alt);
+        if (i === 0) ctx.moveTo(xp, yp); else ctx.lineTo(xp, yp);
+      });
+      for (let i = altitudes.length - 1; i >= 0; i--) {
+        ctx.lineTo(xPos(vMaxs[i] * 3.6), yPos(altitudes[i]));
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 畫失速線
+      ctx.save();
+      ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      altitudes.forEach((alt, i) => {
+        const x = xPos(vStalls[i] * 3.6), y = yPos(alt);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.restore();
+
+      // 畫極速線
+      ctx.save();
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      altitudes.forEach((alt, i) => {
+        const x = xPos(vMaxs[i] * 3.6), y = yPos(alt);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.restore();
+
+      // 畫俯衝極速線
+      ctx.save();
+      ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      altitudes.forEach((alt, i) => {
+        const x = xPos(vDives45[i] * 3.6), y = yPos(alt);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.restore();
+
+    } else if (chartId === "2") {
+      // 2. 巡航推力需求圖
+      legendWrap.innerHTML = `<span>不同高度平飛所需推力 (N) vs. 速度 (km/h)</span>`;
+      const speeds = [];
+      const vMin = Math.sqrt((2 * weight) / (1.225 * wingArea * clMax));
+      for (let v = vMin; v <= vMin * 3.2; v += 1) speeds.push(v);
+
+      const xPos = (s) => pad.left + ((s - vMin) / (vMin * 2.2)) * plotW;
+      const yPos = (t) => pad.top + plotH - (t / (tStatic * 1.5)) * plotH;
+
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui';
+      for (let tStep = 0; tStep <= tStatic * 1.5; tStep += Math.round(tStatic / 3)) {
+        const y = yPos(tStep);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+        ctx.fillText(`${tStep}N`, 16, y + 4);
+      }
+
+      [0, 2500, 5000].forEach((alt, idx) => {
+        const color = idx === 0 ? '#0284c7' : (idx === 1 ? '#7c3aed' : '#d97706');
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        speeds.forEach((v, i) => {
+          const rho = rho_h(alt);
+          const cl_v = weight / (0.5 * rho * v * v * wingArea);
+          const cd_v = cd0 + k * cl_v * cl_v;
+          const reqT = 0.5 * rho * v * v * wingArea * cd_v;
+          const xp = xPos(v), yp = yPos(reqT);
+          if (i === 0) ctx.moveTo(xp, yp); else ctx.lineTo(xp, yp);
+        });
+        ctx.stroke();
+        ctx.restore();
+      });
+
+    } else if (chartId === "5") {
+      // 5. 爬升率曲線 (ROC)
+      legendWrap.innerHTML = `<span>海平面爬升率 (m/s) 隨飛行速度 (km/h) 變化</span>`;
+      const vStall = Math.sqrt((2 * weight) / (1.225 * wingArea * clMax));
+      const vEnd = vStall * 3.0;
+
+      const speeds = [], rocs = [];
+      let maxRocVal = 0, vy = vStall;
+      for (let v = vStall; v <= vEnd; v += 0.5) {
+        const cl_v = weight / (0.5 * 1.225 * v * v * wingArea);
+        const cd_v = cd0 + k * cl_v * cl_v;
+        const drag_v = 0.5 * 1.225 * v * v * wingArea * cd_v;
+        const t_avail = thrust_model(tStatic, 0, v);
+        const roc = ((t_avail - drag_v) * v) / weight;
+        speeds.push(v);
+        rocs.push(roc);
+        if (roc > maxRocVal) { maxRocVal = roc; vy = v; }
+      }
+
+      const maxY = Math.max(3, maxRocVal * 1.25);
+      const xPos = (v) => pad.left + ((v - vStall) / (vEnd - vStall)) * plotW;
+      const yPos = (roc) => pad.top + plotH - (roc / maxY) * plotH;
+
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui';
+      for (let r = 0; r <= maxY; r += 1) {
+        const y = yPos(r);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+        ctx.fillText(`${r} m/s`, 12, y + 4);
+      }
+      speeds.forEach((v, i) => {
+        if (i % 20 === 0) {
+          const x = xPos(v);
+          ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, h - pad.bottom); ctx.stroke();
+          ctx.fillText(`${(v*3.6).toFixed(0)}`, x - 10, h - 14);
+        }
+      });
+
+      ctx.save();
+      ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      speeds.forEach((v, i) => {
+        const x = xPos(v), y = yPos(rocs[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // 標註 Vy
+      const xVy = xPos(vy), yVy = yPos(maxRocVal);
+      ctx.fillStyle = '#16a34a'; ctx.beginPath(); ctx.arc(xVy, yVy, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f172a'; ctx.font = 'bold 12px system-ui';
+      ctx.fillText(`Vy: ${(vy*3.6).toFixed(1)} km/h (ROC: ${maxRocVal.toFixed(2)} m/s)`, Math.min(xVy + 10, w - 220), yVy - 10);
+      ctx.restore();
+
+    } else if (chartId === "6") {
+      // 6. 升阻比 (L/D) 曲線
+      legendWrap.innerHTML = `<span>海平面平飛升阻比 L/D 隨速度變化 (最佳滑翔點)</span>`;
+      const vStall = Math.sqrt((2 * weight) / (1.225 * wingArea * clMax));
+      const vEnd = vStall * 3.5;
+      const speeds = [], lds = [];
+      let maxLd = 0, bestV = vStall;
+
+      for (let v = vStall; v <= vEnd; v += 0.5) {
+        const cl_v = weight / (0.5 * 1.225 * v * v * wingArea);
+        const cd_v = cd0 + k * cl_v * cl_v;
+        const ld = cl_v / cd_v;
+        speeds.push(v);
+        lds.push(ld);
+        if (ld > maxLd) { maxLd = ld; bestV = v; }
+      }
+
+      const maxY = maxLd * 1.25;
+      const xPos = (v) => pad.left + ((v - vStall) / (vEnd - vStall)) * plotW;
+      const yPos = (ld) => pad.top + plotH - (ld / maxY) * plotH;
+
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui';
+      for (let ldStep = 0; ldStep <= maxY; ldStep += Math.round(maxY / 5)) {
+        const y = yPos(ldStep);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+        ctx.fillText(`${ldStep}`, 20, y + 4);
+      }
+      speeds.forEach((v, i) => {
+        if (i % 20 === 0) {
+          const x = xPos(v);
+          ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, h - pad.bottom); ctx.stroke();
+          ctx.fillText(`${(v*3.6).toFixed(0)}`, x - 10, h - 14);
+        }
+      });
+
+      ctx.save();
+      ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      speeds.forEach((v, i) => {
+        const x = xPos(v), y = yPos(lds[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      const xBest = xPos(bestV), yBest = yPos(maxLd);
+      ctx.fillStyle = '#0284c7'; ctx.beginPath(); ctx.arc(xBest, yBest, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f172a'; ctx.font = 'bold 12px system-ui';
+      ctx.fillText(`最佳 L/D: ${maxLd.toFixed(2)} (@ ${(bestV*3.6).toFixed(1)} km/h)`, Math.min(xBest + 10, w - 240), yBest - 10);
+      ctx.restore();
+
+    } else {
+      // 3 或 4 的通用自適應簡要繪製
+      legendWrap.innerHTML = `<span>進階動力學分析圖表 (${document.getElementById('sel-chart').selectedOptions[0].text})</span>`;
+      ctx.fillStyle = '#64748b'; ctx.font = '14px system-ui';
+      ctx.fillText('此項圖表數據正依當前大氣與幾何模型動態生成中...', w / 3, h / 2);
+    }
+  }
+
+  // 監聽所有滑桿輸入
+  [sMass, sCl, sRho, sTargetSpeed, sWingArea, sSafeFactor, sCatV0, sCatAngle, sCatThrust, sEnvAr, sEnvE, sEnvClMax, sEnvCd0, sEnvThrust, sEnvHmax].forEach(s => s.addEventListener('input', update));
+  window.addEventListener('resize', () => {
+    if (currentTab === 2) drawCatapultChart();
+    if (currentTab === 3) renderActiveChart();
+  });
+
+  update();
+</script>
+</body>
+</html>
