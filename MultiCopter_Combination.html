@@ -255,8 +255,8 @@
     </div>
     <div class="metric-card">
       <div class="metric-label">最大推重比 (TWR)</div>
-      <div class="metric-value" id="val-twr" style="color:var(--success);">2.69 : 1</div>
-      <div class="metric-sub" id="sub-twr">最大總推力: 5,150g (單軸飽和 1,355g)</div>
+      <div class="metric-value" id="val-twr" style="color:var(--success);">4.08 : 1</div>
+      <div class="metric-sub" id="sub-twr">最大總推力: 7,950g (單軸最大 2,093g)</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">電池總能量 / 可用能量</div>
@@ -638,7 +638,7 @@
           <strong>說明：</strong>將 $N_{\text{rotors}}$ 個旋翼投影面積求和得到總掃掠面積 $A_{\text{rotors}}$。大螺旋槳或多旋翼佈局使槳盤負載 $DL$ 顯著降低，能量轉換動能的動量損失縮小，力效突破傳統 13.5 g/W 限制，最高可達 18~22 g/W。
         </p>
         <div class="formula-source">
-          <strong>參考說明：</strong>以致動盤動量基礎公式 $T = 2\rho A v_i^2$ 進行推導，誘導功率 $P_i = T v_i = T^{3/2}/\sqrt{2\rho A}$。已解除先前的硬性 13.5 g/W 限制，改用動量極限與電機耗損漸進飽和模型。
+          <strong>參考說明：</strong>以致動盤動量基礎公式 $T = 2\rho A v_i^2$ 進行推導，誘導功率 $P_i = T v_i = T^{3/2}/\sqrt{2\rho A}$。已解除先前的硬性 13.5 g/W 限制，改用動量理論極限與電機效率模型。
         </div>
       </div>
 
@@ -723,20 +723,18 @@
         </div>
       </div>
 
-      <!-- 算式 7：物理飽和修正推力與推重比 (TWR) -->
+      <!-- 算式 7：全油門推力與推重比 (TWR) -->
       <div class="formula-block">
-        <div class="formula-title">7. 物理飽和修正最大推力與推重比</div>
+        <div class="formula-title">7. 全油門最大推力與推重比試算</div>
         <div class="formula-box">
-          T_axis_aero = T_hover × (RPM_full / RPM_hover)²<br>
-          T_motor_limit = W_motor × [24.0 × (60 / W_motor)^0.12]<br>
-          T_axis_max = min(T_axis_aero, T_motor_limit)<br>
+          T_axis_max = T_hover × (RPM_full / RPM_hover)²<br>
           TWR = (N_rotors × T_axis_max × 0.95) / AUW
         </div>
         <p class="formula-desc">
-          <strong>說明：</strong>由「氣動全油門推力」與「馬達定子物理極限」共同取最小值。馬達過小或定子過輕時，推力會受到物理飽和限制，避免推重比被過度高估。
+          <strong>說明：</strong>依轉速平方律計算全油門氣動最大推力，暫不設定馬達硬性飽和點，保留完整氣動響應範圍，並保留 5% 姿態控制裕度估算整機推重比。
         </p>
         <div class="formula-source">
-          <strong>參考說明：</strong>依無刷馬達功率密度與定子尺寸限制進行評估，大型馬達推重比隨定子自重產生物理飽和。
+          <strong>參考說明：</strong>根據旋翼推力公式 $T \propto \text{RPM}^2$，以滿載最高轉速相對於懸停轉速之平方比進行全油門推力估算。
         </div>
       </div>
 
@@ -980,16 +978,15 @@
 
     const fullLoadRpm = noLoadRpm * 0.85;
     const aeroMaxThrustPerAxis = thrustPerAxis * Math.pow(fullLoadRpm / Math.max(100, hoverRpm), 2);
-    const maxThrustRatio = 24.0 * Math.pow(60 / motorW, 0.12);
-    const motorThrustLimit = motorW * maxThrustRatio;
-    const singleMaxThrust = Math.min(aeroMaxThrustPerAxis, motorThrustLimit);
+    // 依使用者需求：暫不設定飽和點，完全依氣動全油門轉速響應計算
+    const singleMaxThrust = aeroMaxThrustPerAxis;
     const maxThrustTotalG = Math.round(rotors * singleMaxThrust * 0.95);
     const twr = parseFloat((maxThrustTotalG / Math.max(1, auw)).toFixed(2));
 
     return {
       diskLoading, effHover, hoverTotalW, realTotalW, nominalVoltage, totalWh, usableWh,
       hoverMins, realMins, hoverRpm, hoverThrottlePct, pitchInch, pdRatio,
-      twr, maxThrustTotalG, singleMaxThrust: Math.round(singleMaxThrust), motorThrustLimit: Math.round(motorThrustLimit)
+      twr, maxThrustTotalG, singleMaxThrust: Math.round(singleMaxThrust)
     };
   }
 
@@ -1185,7 +1182,7 @@
     const valTwr = document.getElementById('val-twr');
     valTwr.textContent = `${res.twr.toFixed(2)} : 1`;
     valTwr.style.color = res.twr >= 1.8 ? 'var(--success)' : (res.twr >= 1.4 ? 'var(--warning)' : 'var(--danger)');
-    document.getElementById('sub-twr').textContent = `總推力: ${res.maxThrustTotalG.toLocaleString()}g (單軸飽和: ${res.singleMaxThrust.toLocaleString()}g)`;
+    document.getElementById('sub-twr').textContent = `總推力: ${res.maxThrustTotalG.toLocaleString()}g (單軸最大: ${res.singleMaxThrust.toLocaleString()}g)`;
 
     // 4. 電池能量卡片
     document.getElementById('val-energy').textContent = `${res.totalWh.toFixed(1)} Wh`;
